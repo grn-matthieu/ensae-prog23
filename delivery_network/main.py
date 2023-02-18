@@ -6,4 +6,5 @@ file_name = "network.01.in"
 
 g = graph_from_file(data_path + file_name)
 a = g.connected_components()
+#Je change légèrement le code.
 print(a)
