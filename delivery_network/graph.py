@@ -1,34 +1,16 @@
 class Graph:
-    """
-    A class representing graphs as adjacency lists and implementing various algorithms on the graphs. Graphs in the class are not oriented. 
-    Attributes: 
-    -----------
-    nodes: NodeType
-        A list of nodes. Nodes can be of any immutable type, e.g., integer, float, or string.
-        We will usually use a list of integers 1, ..., n.
-    graph: dict
-        A dictionnary that contains the adjacency list of each node in the form
-        graph[node] = [(neighbor1, p1, d1), (neighbor1, p1, d1), ...]
-        where p1 is the minimal power on the edge (node, neighbor1) and d1 is the distance on the edge
-    nb_nodes: int
-        The number of nodes.
-    nb_edges: int
-        The number of edges. 
-    """
-
     def __init__(self, nodes=[]):
-        """
-        Initializes the graph with a set of nodes, and no edges. 
-        Parameters: 
-        -----------
-        nodes: list, optional
-            A list of nodes. Default is empty.
-        """
         self.nodes = nodes
         self.graph = dict([(n, []) for n in nodes])
         self.nb_nodes = len(nodes)
         self.nb_edges = 0
-    
+        """
+        Example graph format for two nodes(1,2) connected:
+        self.nodes = [1,2]
+        self.graph = {1:[(2, power, dist)], 2:[(1, power, dist)]}
+        self.nb_nodes = 2
+        self.nb_edges = 1
+        """
 
     def __str__(self):
         """Prints the graph as a list of neighbors for each node (one per line)"""
@@ -55,15 +37,52 @@ class Graph:
         dist: numeric (int or float), optional
             Distance between node1 and node2 on the edge. Default is 1.
         """
-        raise NotImplementedError
-    
+        #We can use the append function as graph_from_file automatically creates the graph with all of our nodes
+        self.graph[node1].append((node2,power_min,dist))
+        self.graph[node2].append((node1,power_min,dist))
+
 
     def get_path_with_power(self, src, dest, power):
         raise NotImplementedError
-    
+
+    def depth_search(self, node, seen=None):
+        """
+        Deep searches a graph, and returns a list of connected nodes.
+
+        Parameters:
+        -----------
+        node : NodeType(integer)
+            The starting node for the algorithm to run.
+        seen : set
+            The set which contains all of the connected nodes.
+        """
+        #We implement a recursive function to depth search our graph.
+        if seen == None:
+            #In the case of first implementation, we create the set.
+            seen = set()
+        if node not in seen:
+            #If the edge is not in the set, we add it and depth search from it.
+            seen.add(node)
+            list_of_neighbours = list(zip(*self.graph[node]))[0]
+            for neighbor in list_of_neighbours:
+                self.depth_search(neighbor,seen)
+        return seen
 
     def connected_components(self):
-        raise NotImplementedError
+        """
+        Builds a list of connected nodes, grouped in lists, and returns it.
+        This function relies on the depth search alogrithm, implemented in depth_search().
+
+        """
+        connected_list = []
+        for node in self.nodes:
+            #We check all existing nodes in our graph.
+            new_graph = sorted(self.depth_search(node))
+            #We sort the list of connected components in order to compare lists of connected components.
+            if new_graph not in connected_list:
+                connected_list.append(new_graph)
+        return connected_list
+
 
 
     def connected_components_set(self):
@@ -100,4 +119,20 @@ def graph_from_file(filename):
     G: Graph
         An object of the class Graph with the graph from file_name.
     """
-    raise NotImplementedError
+    file = open(filename, 'r')
+    dist=1
+    #First line is read in order to properly intialize our graph
+    line_1 = file.readline().split(' ')
+    new_graph = Graph([node for node in range(1,int(line_1[0])+1)])
+    new_graph.nb_edges = int(line_1[1].strip('\n'))
+    #Then, all lines are read to create a new edge for each line
+    for line in file:
+        list_line = line.split(' ')
+        if list_line == []:
+            continue
+        if len(list_line) == 4:
+            #In the case where a distance is included
+            dist = int(list_line[3])
+        new_graph.add_edge(int(list_line[0]), int(list_line[1]), int(list_line[2]),dist)
+    file.close()
+    return new_graph
