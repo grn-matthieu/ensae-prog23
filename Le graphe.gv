@@ -1,0 +1,29 @@
+digraph "Le graphe" {
+	1
+	2
+	1 -> 2 [arrowhead=none]
+	2
+	3
+	2 -> 3 [arrowhead=none]
+	3
+	4
+	3 -> 4 [arrowhead=none]
+	2
+	5
+	2 -> 5 [arrowhead=none]
+	1
+	6
+	1 -> 6 [arrowhead=none]
+	5
+	7
+	5 -> 7 [arrowhead=none]
+	1
+	8
+	1 -> 8 [arrowhead=none]
+	8
+	9
+	8 -> 9 [arrowhead=none]
+	4
+	10
+	4 -> 10 [arrowhead=none]
+}

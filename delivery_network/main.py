@@ -1,10 +1,11 @@
-from graph import Graph, graph_from_file
+from graph import Graph, graph_from_file, graph_into_pdf
+from graphviz import *
+import os
 
 
 data_path = "input/"
-file_name = "network.01.in"
+file_name = "network.00.in"
 
 g = graph_from_file(data_path + file_name)
-a = g.connected_components()
-#Je change légèrement le code.
-print(a)
+
+graph_into_pdf(data_path+file_name)
