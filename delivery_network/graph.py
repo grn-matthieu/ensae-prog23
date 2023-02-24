@@ -1,10 +1,11 @@
-import graphviz
 class Graph:
     def __init__(self, nodes=[]):
         self.nodes = nodes
         self.graph = dict([(n, []) for n in nodes])
         self.nb_nodes = len(nodes)
         self.nb_edges = 0
+        self.list_of_neighbours = []
+        self.list_of_powers = []
         """
         Example graph format for two nodes(1,2) connected:
         self.nodes = [1,2]
@@ -43,30 +44,8 @@ class Graph:
         self.graph[node1].append((node2,power_min,dist))
         self.graph[node2].append((node1,power_min,dist))
 
-    def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[]):
-        if node not in seen:
-            #If the edge is not in the set, we add it and depth search from it.
-            seen.append(node)
-            if node == dest:
-                liste.append(seen)
-            list_of_neighbours = self.list_of_neighbours(node)
-            for index, neighbor in enumerate(list_of_neighbours):
-                if self.graph[node][index][1] > power and power!=-1:
-                    continue
-                self.get_list_of_paths_with_power(neighbor,dest,seen=seen.copy(),liste=liste)
-        return liste
-
-    def get_path_with_power(self,origin,destination,power=-1):
-        list_of_paths = self.get_list_of_paths_with_power(origin,destination,power)
-        if list_of_paths == []:
-            return None
-        if len(list_of_paths) == 1:
-            return list_of_paths[0]
-        min_index = self.minimum_distance(origin,destination,list_of_paths)
-        return list_of_paths[min_index]
-
     def minimum_distance(self,origin, destination, possible_paths=[]):
-        list_of_neighbours = [self.list_of_neighbours(node) for node in self.nodes if self.graph[node]!=[]]
+        list_of_neighbours = self.list_of_neighbours
         current_distance = 0
         distance = 0
         for index, path in enumerate(possible_paths):
@@ -83,33 +62,21 @@ class Graph:
         return min_index
     
     def min_power(self,origin,destination):
-        list_of_paths = self.get_list_of_paths_with_power(origin,destination)
-        list_of_neighbours = [self.list_of_neighbours(node) for node in self.nodes if self.graph[node]!=[]]
-        min_power = 0
-        for index, path in enumerate(list_of_paths):
-            for node in path:
-                if node == origin:
-                    previous_node = node
-                    power_of_path = 0
-                    continue
-                index_previous_node = list_of_neighbours[node-1].index(previous_node)
-                power_of_path = max(self.graph[node][index_previous_node][1],power_of_path)
-                previous_node = node
-            if min_power<power_of_path or min_power == 0:
-                min_power = power_of_path
-                min_power_path = path
-        return (min_power_path,min_power)
-
-    def list_of_neighbours(self, node):
-        """
-        Returns a list of nodes connected to the input node.
-
-        Parameters:
-        -----------
-        node : nodeType(integer)
-            The node for which we consider neighbours.
-        """
-        return list(zip(*self.graph[node]))[0]
+        start = 0
+        length = len(self.list_of_powers)
+        end = length-1
+        if destination not in self.depth_search(origin):
+            return None
+        while start != end:
+            mid = (start+end)//2
+            if destination not in self.depth_search(origin, power=self.list_of_powers[mid]):
+                start = mid
+            else:
+                end = mid
+            if end-start == 1:
+                end = start
+        return start
+        
 
     def depth_search(self, node, seen=None, power=-1, dest=0):
         """
@@ -131,8 +98,8 @@ class Graph:
         if node not in seen:
             #If the edge is not in the set, we add it and depth search from it.
             seen.add(node)
-            list_of_neighbours = self.list_of_neighbours(node)
-            for index, neighbor in enumerate(list_of_neighbours):
+            list_of_neighbours = self.list_of_neighbours
+            for index, neighbor in enumerate(list_of_neighbours[node-1]):
                 if self.graph[node][index][2] > power and power!=-1:
                     #If we use the algorithm with a given power, we check if two nodes can be linked with this power
                     #If not, we do not consider the neighbor.
@@ -201,6 +168,10 @@ def graph_from_file(filename):
             #In the case where a distance is included
             dist = int(list_line[3])
         new_graph.add_edge(int(list_line[0]), int(list_line[1]), int(list_line[2]),dist)
+        if int(list_line[2]) not in new_graph.list_of_powers:
+            new_graph.list_of_powers.append(int(list_line[2]))
+    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
+    new_graph.list_of_powers = sorted(new_graph.list_of_powers)
     file.close()
     return new_graph
 
