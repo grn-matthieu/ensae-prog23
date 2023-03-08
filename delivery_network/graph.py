@@ -1,3 +1,4 @@
+import graphviz
 class Graph:
     def __init__(self, nodes=[]):
         self.nodes = nodes
@@ -6,6 +7,7 @@ class Graph:
         self.nb_edges = 0
         self.list_of_neighbours = []
         self.list_of_powers = []
+        self.list_of_edges = []
         """
         Example graph format for two nodes(1,2) connected:
         self.nodes = [1,2]
@@ -44,6 +46,9 @@ class Graph:
         self.graph[node1].append((node2,power_min,dist))
         self.graph[node2].append((node1,power_min,dist))
 
+        #We build a list of all edges
+        self.list_of_edges.append((node1,node2,power_min))
+
     def minimum_distance(self,origin, destination, possible_paths=[]):
         list_of_neighbours = self.list_of_neighbours
         current_distance = 0
@@ -74,10 +79,29 @@ class Graph:
             else:
                 end = mid
             if end-start == 1:
-                end = start
-        return start
+                start=end
+        return self.list_of_powers[end]
         
+    def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[]):
+        if node not in seen:
+            seen.append(node)
+            if node == dest:
+                liste.append(seen)
+            for index, neighbor in enumerate(self.list_of_neighbours[node-1]):
+                if self.graph[node][index][1] > power and power!=-1:
+                    continue
+                self.get_list_of_paths_with_power(neighbor,dest,seen=seen.copy(),liste=liste)
+        return liste
 
+    def get_path_with_power(self,origin,destination,power=-1):
+        list_of_paths = self.get_list_of_paths_with_power(origin,destination,power)
+        if list_of_paths == []:
+            return None
+        if len(list_of_paths) == 1:
+            return list_of_paths[0]
+        min_index = self.minimum_distance(origin,destination,list_of_paths)
+        return list_of_paths[min_index]
+    
     def depth_search(self, node, seen=None, power=-1, dest=0):
         """
         Deep searches a graph, and returns a list of connected nodes.
@@ -100,7 +124,7 @@ class Graph:
             seen.add(node)
             list_of_neighbours = self.list_of_neighbours
             for index, neighbor in enumerate(list_of_neighbours[node-1]):
-                if self.graph[node][index][2] > power and power!=-1:
+                if self.graph[node][index][1] > power and power!=-1:
                     #If we use the algorithm with a given power, we check if two nodes can be linked with this power
                     #If not, we do not consider the neighbor.
                     continue
@@ -132,7 +156,105 @@ class Graph:
         For instance, for network01.in: {frozenset({1, 2, 3}), frozenset({4, 5, 6, 7})}
         """
         return set(map(frozenset, self.connected_components()))
+
+
+
+class Union_Find():
+    '''
+    This class is used later to implement the Kruskal's algorithm.
+    It allows to create a Union-Find structure.
+    The path compression upgrade of the structure allows us to reduce its complexity.
+    '''
+    def __init__(self):
+        self.rank = -1
+        self.parent = -1
+
+    def make_set(self):
+        self.parent = self
+        self.rank = 0
     
+    def find(self):
+        while self != self.parent:
+            self = self.parent
+        return self
+    
+    def union(self, y):
+        root_x = self.find()
+        root_y = y.find()    
+        if root_x == root_y :
+            return 
+        if root_x.rank > root_y.rank:
+            root_y.parent = root_x
+        else:
+            root_x.parent = root_y
+            if root_x.rank == root_y.rank:
+                root_y.rank = root_y.rank + 1
+
+
+
+def kruskal(input_graph):
+    '''
+    This function is an implementation of the Kruskal's algorithm, described in Algorithms, Dasgupta et al.
+
+    Parameters:
+    -----------
+    input_graph : graph object
+        The graph which will be spanned by the algorithm.
+
+    Output:
+    -------
+    output_graph : graph object
+        The minimum spanning tree extracted from input_graph.   
+    '''
+    #We need to build a list of all edges, sorted by power, and in order that they are not duplicated
+    #The list is partially build thanks to add_edge function, but it needs to be sorted
+    sorted_edges = input_graph.list_of_edges
+    sorted_edges.sort(key=lambda a : a[2])
+    #The list of edges sorted by power_min is now stored in sorted_edges
+    dict_of_nodes = {}
+    for node in input_graph.nodes:#We create a list of nodes in our union find structure
+        dict_of_nodes[node] = Union_Find()
+        dict_of_nodes[node].make_set()
+    X = set()
+    for edge in sorted_edges:
+        #We start by identifying our linkes nodes
+        node_1 = edge[0]
+        node_2 = edge[1]
+        power_min = edge[2]
+        if dict_of_nodes[node_1].find() != dict_of_nodes[node_2].find():#If the two nodes do not share the same parent, we add the edge to the set
+            X.add((node_1,node_2,power_min))
+            dict_of_nodes[node_1].union(dict_of_nodes[node_2])#We link the nodes together in order to update nodes' parents
+
+    
+    #X now contains the list of all edges of the spanned graph. We have to create it.
+    output_graph = Graph(input_graph.nodes)
+    for edge in X:
+        #We look at all edges to properly intialize our graph oubject.
+        output_graph.add_edge(edge[0],edge[1],edge[2])
+        if edge not in output_graph.list_of_edges:
+            output_graph.list_of_edges.append(edge)
+        output_graph.nb_edges += 1
+        if edge[0] not in output_graph.nodes:
+            output_graph.nodes.append(edge[0])
+            output_graph.nb_nodes += 1
+        if edge[1] not in output_graph.nodes:
+            output_graph.nodes.append(edge[1])
+            output_graph.nb_nodes += 1
+        if edge[2] not in output_graph.list_of_powers:
+            output_graph.list_of_powers.append(edge[2])
+    output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] for node in output_graph.nodes if output_graph.graph[node]!=[]]
+    #All of the graph parameters are set :)
+    return output_graph
+
+
+
+
+
+
+
+
+
+
 def graph_from_file(filename):
     """
     Reads a text file and returns the graph as an object of the Graph class.
