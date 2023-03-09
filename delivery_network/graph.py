@@ -1,4 +1,4 @@
-import graphviz
+import time
 class Graph:
     def __init__(self, nodes=[]):
         self.nodes = nodes
@@ -6,8 +6,8 @@ class Graph:
         self.nb_nodes = len(nodes)
         self.nb_edges = 0
         self.list_of_neighbours = []
-        self.list_of_powers = []
         self.list_of_edges = []
+        self.max_power = 0
         """
         Example graph format for two nodes(1,2) connected:
         self.nodes = [1,2]
@@ -82,7 +82,6 @@ class Graph:
                 distance = current_distance
                 min_index = index            
         return min_index
-    
 
     def min_power(self,origin,destination):
         '''
@@ -102,13 +101,12 @@ class Graph:
                 A tuple containing the minimum power, and the associated path.     
         '''
         start = 0
-        length = len(self.list_of_powers)
-        end = length-1
+        end = self.max_power
         if destination not in self.depth_search(origin):
             return None
         while start != end:
             mid = (start+end)//2
-            if destination not in self.depth_search(origin, power=self.list_of_powers[mid]):
+            if destination not in self.depth_search(origin, power=mid):
                 start = mid
             else:
                 end = mid
@@ -347,6 +345,7 @@ def graph_from_file(filename):
     G: Graph
         An object of the class Graph with the graph from file_name.
     """
+    start = time.perf_counter()
     file = open(filename, 'r')
     dist=1
     #First line is read in order to properly intialize our graph
@@ -355,6 +354,7 @@ def graph_from_file(filename):
     nb_edges = int(line_1[1].strip('\n'))
     new_graph = Graph([node for node in range(1,total_nodes+1)])
     new_graph.nb_edges = nb_edges
+    new_graph.list_of_edges = [None]*nb_edges
     #Then, all lines are read to create a new edge for each line
     for line in file:
         list_line = line.split(' ')
@@ -366,14 +366,11 @@ def graph_from_file(filename):
         if len(list_line) == 4:
             #In the case where a distance is included
             dist = int(list_line[3])
+        new_graph.max_power = max(new_graph.max_power, power)
         new_graph.add_edge(start_node, end_node, power, dist)
-        if power not in new_graph.list_of_powers:
-            new_graph.list_of_powers.append(int(list_line[2]))
-    print('Ok graph')
     new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
-    print('Ok list_of_neighbours')
-    new_graph.list_of_powers = sorted(new_graph.list_of_powers)
-    print('OK list of powers')
+    stop = time.perf_counter()
+    print(stop-start)
     file.close()
     return new_graph
 

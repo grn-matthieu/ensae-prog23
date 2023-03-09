@@ -1,11 +1,10 @@
 from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, kruskal
 import os
-import graphviz
 import time
 import random
 
 data_path = "input/"
-file_name = "network.2.in"
+file_name = "network.4.in"
 
 def estimate_time():
     list_of_times = []
@@ -24,5 +23,5 @@ def estimate_time():
         list_of_times.append(current_time_stop-current_time_start)
     print(f'Moyenne de temps de traitement : {(1/N)*sum(list_of_times)}')
 
+
 g = graph_from_file(data_path + file_name)
-print(g)
