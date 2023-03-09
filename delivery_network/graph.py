@@ -50,6 +50,23 @@ class Graph:
         self.list_of_edges.append((node1,node2,power_min))
 
     def minimum_distance(self,origin, destination, possible_paths=[]):
+        '''
+        This function returns the minimum distance to link two nodes.
+        In order to do so, we examine all possible paths, retrieve the total distance for each, and choose the minimum
+
+        Parameters:
+        -----------
+            -origin : Nodetype(integer)
+                The starting node for the path
+            -destination : NodeType(integer)
+                The destination node
+            -possible_paths : list
+                the list of all possible paths to link the two nodes together
+
+        Output:
+        -------
+            -min_index : The smallest distance to link the nodes together
+        '''
         list_of_neighbours = self.list_of_neighbours
         current_distance = 0
         distance = 0
@@ -66,7 +83,24 @@ class Graph:
                 min_index = index            
         return min_index
     
+
     def min_power(self,origin,destination):
+        '''
+        This function searches the minimum power to link two nodes together.
+        It relies on binary search : we list all powers in our graph, and we look if the nodes can be linked with a given power.
+
+        Parameters:
+        -----------
+            -origin : NodeType(integer)
+                The starting node.
+            -destination : NOdeType(integer)
+                The end node.
+
+        Output :
+        --------
+            -(power,path):
+                A tuple containing the minimum power, and the associated path.     
+        '''
         start = 0
         length = len(self.list_of_powers)
         end = length-1
@@ -80,9 +114,38 @@ class Graph:
                 end = mid
             if end-start == 1:
                 start=end
-        return self.list_of_powers[end]
+        #We now have identified the minimum power to link the two nodes, stored in self.list_of_powers[end]
+        #We have to get the path
+        power = self.list_of_powers[end]
+        print(f'OK power={power}')
+        path = self.get_list_of_paths_with_power(origin,destination,power=power)[0]
+        return (power,path)
         
     def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[]):
+        '''
+        This function searches for all of the possible paths between two nodes, given a certain power(optional).
+        It relies on a DFS, which is modified to remmeber the path that has been taken.
+        This function is recursive.
+
+        Parameters:
+        ----------
+            -node : NodeType(integer)
+                The starting node.
+            -dest : NodeType(integer)
+                The end node.
+            -power : integer
+                The optional power which can restrain the available edges.
+            -seen : list
+                The list of the nodes that have been seen by the algorithm.
+            -liste : liste
+                The list containing the possible paths.
+    
+        Output:
+        -------
+            -liste : liste
+                The list containing all of the possible paths.
+        
+        '''
         if node not in seen:
             seen.append(node)
             if node == dest:
@@ -94,6 +157,23 @@ class Graph:
         return liste
 
     def get_path_with_power(self,origin,destination,power=-1):
+        '''
+        This function returns a path compatible with a given power between two nodes.
+
+        Parameters:
+        -----------
+            -origin : nodeType(integer)
+                The starting node for our algorithm
+            -destination : nodeType(integer)
+                The destination node.
+            -power : integer
+                The optional power which can restrain the edges taken by the algorithm.
+
+        Output:
+        -------
+            -list_of_paths[integer] : a path from the list of all possible paths.
+        
+        '''
         list_of_paths = self.get_list_of_paths_with_power(origin,destination,power)
         if list_of_paths == []:
             return None
@@ -237,6 +317,7 @@ def kruskal(input_graph):
         if edge[0] not in output_graph.nodes:
             output_graph.nodes.append(edge[0])
             output_graph.nb_nodes += 1
+            next()
         if edge[1] not in output_graph.nodes:
             output_graph.nodes.append(edge[1])
             output_graph.nb_nodes += 1
@@ -245,15 +326,6 @@ def kruskal(input_graph):
     output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] for node in output_graph.nodes if output_graph.graph[node]!=[]]
     #All of the graph parameters are set :)
     return output_graph
-
-
-
-
-
-
-
-
-
 
 def graph_from_file(filename):
     """
@@ -279,21 +351,29 @@ def graph_from_file(filename):
     dist=1
     #First line is read in order to properly intialize our graph
     line_1 = file.readline().split(' ')
-    new_graph = Graph([node for node in range(1,int(line_1[0])+1)])
-    new_graph.nb_edges = int(line_1[1].strip('\n'))
+    total_nodes = int(line_1[0])
+    nb_edges = int(line_1[1].strip('\n'))
+    new_graph = Graph([node for node in range(1,total_nodes+1)])
+    new_graph.nb_edges = nb_edges
     #Then, all lines are read to create a new edge for each line
     for line in file:
         list_line = line.split(' ')
+        start_node = int(list_line[0])
+        end_node = int(list_line[1])
+        power = int(list_line[2])
         if list_line == []:
             continue
         if len(list_line) == 4:
             #In the case where a distance is included
             dist = int(list_line[3])
-        new_graph.add_edge(int(list_line[0]), int(list_line[1]), int(list_line[2]),dist)
-        if int(list_line[2]) not in new_graph.list_of_powers:
+        new_graph.add_edge(start_node, end_node, power, dist)
+        if power not in new_graph.list_of_powers:
             new_graph.list_of_powers.append(int(list_line[2]))
+    print('Ok graph')
     new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
+    print('Ok list_of_neighbours')
     new_graph.list_of_powers = sorted(new_graph.list_of_powers)
+    print('OK list of powers')
     file.close()
     return new_graph
 

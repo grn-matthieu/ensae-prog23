@@ -5,14 +5,10 @@ import time
 import random
 
 data_path = "input/"
-file_name = "network.02.in"
+file_name = "network.2.in"
 
-g = graph_from_file(data_path + file_name)
-h = kruskal(g)
-print(g)
-print(h)
-'''list_of_times = []
 def estimate_time():
+    list_of_times = []
     N=20
     list_of_paths = []
     for index in range(N):
@@ -27,4 +23,6 @@ def estimate_time():
         print(current_time_stop)
         list_of_times.append(current_time_stop-current_time_start)
     print(f'Moyenne de temps de traitement : {(1/N)*sum(list_of_times)}')
-estimate_time()'''
+
+g = graph_from_file(data_path + file_name)
+print(g)
