@@ -1,4 +1,5 @@
 import graphviz
+import time
 class Graph:
     def __init__(self, nodes=[]):
         self.nodes = nodes
@@ -352,10 +353,11 @@ def kruskal(input_graph):
         The minimum spanning tree extracted from input_graph.   
     '''
     #We need to build a list of all edges, sorted by power, and in order that they are not duplicated
-    #The list is partially build thanks to add_edge function, but it needs to be sorted
+    #The list is partially built thanks to add_edge function, but it needs to be sorted
     sorted_edges = input_graph.list_of_edges
     sorted_edges.sort(key=lambda a : a[2])
     #The list of edges sorted by power_min is now stored in sorted_edges
+    output_graph = Graph(input_graph.nodes)
     global dict_of_nodes
     dict_of_nodes = {}
     for node in input_graph.nodes:#We create a list of nodes in our union find structure
@@ -372,7 +374,6 @@ def kruskal(input_graph):
             dict_of_nodes[node_1].union(dict_of_nodes[node_2])#We link the nodes together in order to update nodes' parents
     start = time.perf_counter()
     #X now contains the list of all edges of the spanned graph. We have to create it.
-    output_graph = Graph(input_graph.nodes)
     output_graph.nb_edges = input_graph.nb_nodes - 1
     for edge in X:
         origin, destination, power = edge[0], edge[1], edge[2]
@@ -385,6 +386,46 @@ def kruskal(input_graph):
     stop = time.perf_counter()
     print(f'Graphe par Kruskal tracé en {stop-start} secondes')
     return output_graph
+
+def find_path_with_kruskal(graph, origin, destination, power=-1):
+    #This function aims to find a quick path between two nodes, using the minimum spanning tree.
+    list_of_nodes = list(dict_of_nodes.values())
+    current_node = dict_of_nodes[origin]
+    list_of_parents = []
+    while current_node.parent != current_node:
+        list_of_parents.append(current_node.parent)
+        current_node = current_node.parent
+    #We now have a list of all parents of origin node.
+    #To find the path, we find the lowest common ancestor of destination node.
+    lca = dict_of_nodes[destination]
+    while lca not in list_of_parents:
+        lca = lca.parent
+        print(f'La node étudiée est {node_into_number(current_node)}, son parent est {node_into_number(current_node.parent)}')
+    
+    for element in list_of_parents:
+        print(node_into_number(element))
+
+    print(f'Node LCA : {node_into_number(lca)}')
+    #Now lca is the lowest common ancestor
+    #The path is direct
+    ascending_path  = []
+    descending_path = []
+    current_node = dict_of_nodes[origin]
+    while current_node != lca:
+        ascending_path.append(node_into_number(current_node))
+        current_node = current_node.parent
+    ascending_path.append(node_into_number(lca))
+    current_node = dict_of_nodes[destination]
+    while current_node != lca:
+        descending_path.append(node_into_number(current_node))
+        current_node = current_node.parent
+    
+    return ascending_path + descending_path[::-1]
+
+
+def node_into_number(node):
+    list_of_nodes = list(dict_of_nodes.values())
+    return list_of_nodes.index(node) + 1
 
 def graph_from_file(filename):
     """
@@ -415,7 +456,6 @@ def graph_from_file(filename):
     nb_edges = int(line_1[1].strip('\n'))
     new_graph = Graph([node for node in range(1,total_nodes+1)])
     new_graph.nb_edges = nb_edges
-    new_graph.list_of_edges = [None]*nb_edges
     #Then, all lines are read to create a new edge for each line
     for line in file:
         list_line = line.split(' ')

@@ -1,4 +1,4 @@
-from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, kruskal, find_LCA
+from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, kruskal, find_path_with_kruskal
 import os
 import time
 import random
@@ -24,4 +24,4 @@ def estimate_time(graph):
 
 h = graph_from_file(data_path + file_name)
 g = kruskal(h)
-find_LCA(g, 4, 13)
+print(find_path_with_kruskal(g, 1, 20))
