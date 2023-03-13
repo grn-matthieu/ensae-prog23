@@ -1,4 +1,4 @@
-import time
+import graphviz
 class Graph:
     def __init__(self, nodes=[]):
         self.nodes = nodes
@@ -65,7 +65,7 @@ class Graph:
 
         Output:
         -------
-            -min_index : The smallest distance to link the nodes together
+            -min_index : The index for the smallest distance to link the nodes together
         '''
         list_of_neighbours = self.list_of_neighbours
         current_distance = 0
@@ -100,6 +100,7 @@ class Graph:
             -(power,path):
                 A tuple containing the minimum power, and the associated path.     
         '''
+        path=[]
         start = 0
         end = self.max_power
         if destination not in self.depth_search(origin):
@@ -114,10 +115,9 @@ class Graph:
                 start=end
         #We now have identified the minimum power to link the two nodes, stored in self.list_of_powers[end]
         #We have to get the path
-        power = self.list_of_powers[end]
-        print(f'OK power={power}')
-        path = self.get_list_of_paths_with_power(origin,destination,power=power)[0]
-        return (power,path)
+        power = end
+        path = self.get_list_of_paths_with_power(origin,destination,power=power)
+        return (path,power)
         
     def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[]):
         '''
@@ -142,7 +142,6 @@ class Graph:
         -------
             -liste : liste
                 The list containing all of the possible paths.
-        
         '''
         if node not in seen:
             seen.append(node)
@@ -345,7 +344,6 @@ def graph_from_file(filename):
     G: Graph
         An object of the class Graph with the graph from file_name.
     """
-    start = time.perf_counter()
     file = open(filename, 'r')
     dist=1
     #First line is read in order to properly intialize our graph
@@ -369,8 +367,6 @@ def graph_from_file(filename):
         new_graph.max_power = max(new_graph.max_power, power)
         new_graph.add_edge(start_node, end_node, power, dist)
     new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
-    stop = time.perf_counter()
-    print(stop-start)
     file.close()
     return new_graph
 
