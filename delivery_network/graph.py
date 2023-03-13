@@ -237,24 +237,6 @@ class Graph:
         """
         return set(map(frozenset, self.connected_components()))
 
-    def lowest_common_ancestor(self, node1, node2):
-        """
-        Finds the lowest common ancestor of two nodes in a minimum spanning tree.
-
-        Parameters:
-        -----------
-        node1: NodeType
-            The starting node.
-        node2: NodeType
-            The end node.
-
-        Returns:
-        --------
-        lowest_common_ancestor: NodeType
-            The lowest common ancestor of the two nodes.
-        """
-        print(dict_of_nodes[1])
-
 
 def graph_from_file(filename):
     """
@@ -310,24 +292,24 @@ class Union_Find():
     '''
     This class is used later to implement the Kruskal's algorithm.
     It allows to create a Union-Find structure.
-    The path compression upgrade of the structure allows us to reduce its complexity.
     '''
     def __init__(self):
-        self.rank = -1
-        self.parent = -1
+        self.rank = None
+        self.parent = None
 
     def make_set(self):
         self.parent = self
         self.rank = 0
     
     def find(self):
-        while self != self.parent:
-            self = self.parent
-        return self
+        node = self
+        while node != node.parent:
+            node = node.parent
+        return node
     
     def union(self, y):
         root_x = self.find()
-        root_y = y.find()    
+        root_y = y.find()
         if root_x == root_y :
             return 
         if root_x.rank > root_y.rank:
@@ -387,27 +369,22 @@ def kruskal(input_graph):
     print(f'Graphe par Kruskal tracé en {stop-start} secondes')
     return output_graph
 
-def find_path_with_kruskal(graph, origin, destination, power=-1):
+def find_path_with_kruskal(input_graph, origin, destination, power=-1):
     #This function aims to find a quick path between two nodes, using the minimum spanning tree.
     list_of_nodes = list(dict_of_nodes.values())
     current_node = dict_of_nodes[origin]
-    list_of_parents = []
+    list_of_parents = [current_node]
+    #We build the list of all ancestors of the start node
     while current_node.parent != current_node:
         list_of_parents.append(current_node.parent)
         current_node = current_node.parent
-    #We now have a list of all parents of origin node.
-    #To find the path, we find the lowest common ancestor of destination node.
+    
+    #To find the path, we find the lowest common ancestor of the two nodes.
     lca = dict_of_nodes[destination]
     while lca not in list_of_parents:
         lca = lca.parent
-        print(f'La node étudiée est {node_into_number(current_node)}, son parent est {node_into_number(current_node.parent)}')
-    
-    for element in list_of_parents:
-        print(node_into_number(element))
 
-    print(f'Node LCA : {node_into_number(lca)}')
-    #Now lca is the lowest common ancestor
-    #The path is direct
+    #The path is simple : starting node -> lca -> ending node
     ascending_path  = []
     descending_path = []
     current_node = dict_of_nodes[origin]
@@ -419,13 +396,42 @@ def find_path_with_kruskal(graph, origin, destination, power=-1):
     while current_node != lca:
         descending_path.append(node_into_number(current_node))
         current_node = current_node.parent
-    
-    return ascending_path + descending_path[::-1]
-
+    #Now the path regardless of power is found.
+    #To find the power, we collect all powers in that path, and identify the minimum
+    print(ascending_path)
+    print(descending_path)
+    path = ascending_path + descending_path[::-1]
+    list_of_powers = []
+    for node in path[1:] :
+        index = input_graph.list_of_neighbours[origin-1].index(node)
+        list_of_powers.append(input_graph.graph[origin][index][2])
+        origin = node
+    return (min(list_of_powers), ascending_path + descending_path[::-1])
 
 def node_into_number(node):
     list_of_nodes = list(dict_of_nodes.values())
     return list_of_nodes.index(node) + 1
+
+def update_parents(input_graph):
+    max_rank = -1
+    for node in dict_of_nodes:
+        node_object = dict_of_nodes[node]
+        max_rank = max(max_rank, node_object.rank)
+        if max_rank == node_object.rank:
+            max_node = node
+    #Now, we have identified the node with the maximum rank. We can update all parents starting from that node
+    update(input_graph, max_node)
+
+def update(input_graph, node, seen=[]):
+    seen.append(node)
+    for neighbour in input_graph.list_of_neighbours[node-1]:
+        if neighbour in seen:
+            continue
+        dict_of_nodes[neighbour].parent = dict_of_nodes[node]
+        if dict_of_nodes[neighbour] != dict_of_nodes[node].parent:
+            update(input_graph, neighbour)
+        
+        
 
 def graph_from_file(filename):
     """
