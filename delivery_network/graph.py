@@ -27,7 +27,7 @@ class Graph:
             #Little change test
         return output
     
-    def add_edge(self, node1, node2, power_min, dist=1):
+    def add_edge(self, node1, node2, power_min, dist=1, index=-1):
         """
         Adds an edge to the graph. Graphs are not oriented, hence an edge is added to the adjacency list of both end nodes. 
 
@@ -113,11 +113,11 @@ class Graph:
                 end = mid
             if end-start == 1:
                 start=end
-        #We now have identified the minimum power to link the two nodes, stored in self.list_of_powers[end]
+        #We now have identified the minimum power to link the two nodes, stored in power
         #We have to get the path
         power = end
-        path = self.get_list_of_paths_with_power(origin,destination,power=power)
-        return (path,power)
+        path = self.get_list_of_paths_with_power(origin,destination,power=power)[0]
+        return (power,path)
         
     def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[]):
         '''
@@ -147,6 +147,8 @@ class Graph:
             seen.append(node)
             if node == dest:
                 liste.append(seen)
+                #A MODIFIER : ON BLOQUE A UN SEUL TRAJET
+                return liste
             for index, neighbor in enumerate(self.list_of_neighbours[node-1]):
                 if self.graph[node][index][1] > power and power!=-1:
                     continue
@@ -234,6 +236,73 @@ class Graph:
         """
         return set(map(frozenset, self.connected_components()))
 
+    def lowest_common_ancestor(self, node1, node2):
+        """
+        Finds the lowest common ancestor of two nodes in a minimum spanning tree.
+
+        Parameters:
+        -----------
+        node1: NodeType
+            The starting node.
+        node2: NodeType
+            The end node.
+
+        Returns:
+        --------
+        lowest_common_ancestor: NodeType
+            The lowest common ancestor of the two nodes.
+        """
+        print(dict_of_nodes[1])
+
+
+def graph_from_file(filename):
+    """
+    Reads a text file and returns the graph as an object of the Graph class.
+
+    The file should have the following format: 
+        The first line of the file is 'n m'
+        The next m lines have 'node1 node2 power_min dist' or 'node1 node2 power_min' (if dist is missing, it will be set to 1 by default)
+        The nodes (node1, node2) should be named 1..n
+        All values are integers.
+
+    Parameters: 
+    -----------
+    filename: str
+        The name of the file
+
+    Outputs: 
+    -----------
+    G: Graph
+        An object of the class Graph with the graph from file_name.
+    """
+    start = time.perf_counter()
+    file = open(filename, 'r')
+    dist=1
+    #First line is read in order to properly intialize our graph
+    line_1 = file.readline().split(' ')
+    total_nodes = int(line_1[0])
+    nb_edges = int(line_1[1].strip('\n'))
+    new_graph = Graph([node for node in range(1,total_nodes+1)])
+    new_graph.nb_edges = nb_edges
+    #new_graph.list_of_edges = [None]*nb_edges
+    #Then, all lines are read to create a new edge for each line
+    for line in file:
+        list_line = line.split(' ')
+        start_node = int(list_line[0])
+        end_node = int(list_line[1])
+        power = int(list_line[2])
+        if list_line == []:
+            continue
+        if len(list_line) == 4:
+            #In the case where a distance is included
+            dist = int(list_line[3])
+        new_graph.max_power = max(new_graph.max_power, power)
+        new_graph.add_edge(start_node, end_node, power, dist)
+    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
+    stop = time.perf_counter()
+    print(f'Graphe tracé en {stop-start} secondes')
+    file.close()
+    return new_graph
 
 
 class Union_Find():
@@ -268,7 +337,6 @@ class Union_Find():
                 root_y.rank = root_y.rank + 1
 
 
-
 def kruskal(input_graph):
     '''
     This function is an implementation of the Kruskal's algorithm, described in Algorithms, Dasgupta et al.
@@ -288,40 +356,34 @@ def kruskal(input_graph):
     sorted_edges = input_graph.list_of_edges
     sorted_edges.sort(key=lambda a : a[2])
     #The list of edges sorted by power_min is now stored in sorted_edges
+    global dict_of_nodes
     dict_of_nodes = {}
     for node in input_graph.nodes:#We create a list of nodes in our union find structure
         dict_of_nodes[node] = Union_Find()
         dict_of_nodes[node].make_set()
     X = set()
     for edge in sorted_edges:
-        #We start by identifying our linkes nodes
+        #We start by identifying our linked nodes
         node_1 = edge[0]
         node_2 = edge[1]
         power_min = edge[2]
         if dict_of_nodes[node_1].find() != dict_of_nodes[node_2].find():#If the two nodes do not share the same parent, we add the edge to the set
             X.add((node_1,node_2,power_min))
             dict_of_nodes[node_1].union(dict_of_nodes[node_2])#We link the nodes together in order to update nodes' parents
-
-    
+    start = time.perf_counter()
     #X now contains the list of all edges of the spanned graph. We have to create it.
     output_graph = Graph(input_graph.nodes)
+    output_graph.nb_edges = input_graph.nb_nodes - 1
     for edge in X:
-        #We look at all edges to properly intialize our graph oubject.
-        output_graph.add_edge(edge[0],edge[1],edge[2])
-        if edge not in output_graph.list_of_edges:
-            output_graph.list_of_edges.append(edge)
-        output_graph.nb_edges += 1
-        if edge[0] not in output_graph.nodes:
-            output_graph.nodes.append(edge[0])
-            output_graph.nb_nodes += 1
-            next()
-        if edge[1] not in output_graph.nodes:
-            output_graph.nodes.append(edge[1])
-            output_graph.nb_nodes += 1
-        if edge[2] not in output_graph.list_of_powers:
-            output_graph.list_of_powers.append(edge[2])
+        origin, destination, power = edge[0], edge[1], edge[2]
+        #We look at all edges to properly intialize our graph object.
+        output_graph.add_edge(origin,destination,power)
+        output_graph.list_of_edges.append(edge)
+        output_graph.max_power = max(output_graph.max_power, power)
     output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] for node in output_graph.nodes if output_graph.graph[node]!=[]]
     #All of the graph parameters are set :)
+    stop = time.perf_counter()
+    print(f'Graphe par Kruskal tracé en {stop-start} secondes')
     return output_graph
 
 def graph_from_file(filename):
@@ -344,6 +406,7 @@ def graph_from_file(filename):
     G: Graph
         An object of the class Graph with the graph from file_name.
     """
+    start = time.perf_counter()
     file = open(filename, 'r')
     dist=1
     #First line is read in order to properly intialize our graph
@@ -367,6 +430,8 @@ def graph_from_file(filename):
         new_graph.max_power = max(new_graph.max_power, power)
         new_graph.add_edge(start_node, end_node, power, dist)
     new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
+    stop = time.perf_counter()
+    print(stop-start)
     file.close()
     return new_graph
 

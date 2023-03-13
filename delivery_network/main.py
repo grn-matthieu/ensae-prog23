@@ -1,12 +1,12 @@
-from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, kruskal
+from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, kruskal, find_LCA
 import os
 import time
 import random
 
 data_path = "input/"
-file_name = "network.2.in"
+file_name = "network.1.in"
 
-def estimate_time():
+def estimate_time(graph):
     list_of_times = []
     N=20
     list_of_paths = []
@@ -16,11 +16,12 @@ def estimate_time():
 
     for origin,destination in list_of_paths:
         current_time_start = time.perf_counter()
-        g.min_power(origin,destination)
+        graph.min_power(origin,destination)
         current_time_stop = time.perf_counter()
         list_of_times.append(current_time_stop-current_time_start)
     print(f'Moyenne de temps de traitement : {(1/N)*sum(list_of_times)}')
 
 
-g = graph_from_file(data_path + file_name)
-estimate_time()
+h = graph_from_file(data_path + file_name)
+g = kruskal(h)
+find_LCA(g, 4, 13)
