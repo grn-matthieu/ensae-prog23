@@ -1,4 +1,4 @@
-import graphviz
+#import graphviz
 import time
 import sys
 sys.setrecursionlimit(10000)
@@ -123,7 +123,7 @@ class Graph:
         path = self.get_list_of_paths_with_power(origin,destination,power=power)[0]
         return (power,path)
         
-    def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[]):
+    def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[], unique=False):
         '''
         This function searches for all of the possible paths between two nodes, given a certain power(optional).
         It relies on a DFS, which is modified to remmeber the path that has been taken.
@@ -151,12 +151,12 @@ class Graph:
             seen.append(node)
             if node == dest:
                 liste.append(seen)
-                #A MODIFIER : ON BLOQUE A UN SEUL TRAJET
-                return liste
+                if unique == True:
+                    return seen
             for index, neighbor in enumerate(self.list_of_neighbours[node-1]):
                 if self.graph[node][index][1] > power and power!=-1:
                     continue
-                self.get_list_of_paths_with_power(neighbor,dest,seen=seen.copy(),liste=liste)
+                self.get_list_of_paths_with_power(neighbor,dest,seen=seen.copy(),liste=liste, unique=unique)
         return liste
 
     def get_path_with_power(self,origin,destination,power=-1):
@@ -177,13 +177,10 @@ class Graph:
             -list_of_paths[integer] : a path from the list of all possible paths.
         
         '''
-        list_of_paths = self.get_list_of_paths_with_power(origin,destination,power)
+        list_of_paths = self.get_list_of_paths_with_power(origin,destination,power, unique=True)
         if list_of_paths == []:
             return None
-        if len(list_of_paths) == 1:
-            return list_of_paths[0]
-        min_index = self.minimum_distance(origin,destination,list_of_paths)
-        return list_of_paths[min_index]
+        return list_of_paths[0]
     
     def depth_search(self, node, seen=None, power=-1, dest=0):
         """
@@ -368,10 +365,40 @@ def kruskal(input_graph):
     return output_graph
 
 def determine_parents(input_graph):
+    '''
+    This function properly determines the parent-children system for a graph.
+    It then relies on the determine function, which is a DFS.
+
+    Parameters:
+    -----------
+        -input_graph : GraphType
+            The input graph which we process. It is necessary for this graph to have been processed by the Kruskal algorithm.
+    '''
     liste_parents = list(range(1,input_graph.nb_nodes+1))
     input_graph.parents =  determine(input_graph, 1, liste_parents=liste_parents)
 
 def determine(input_graph, node, liste_parents, seen=set()):
+    '''
+    This function determines parent nodes for all nodes in our graph.
+    This parent-children system will be later used in order to find a path between nodes quickly.
+    This function relies on a DFS, so it is recursive.
+
+    Parameters:
+    -----------
+        -input_graph : GraphType
+            The graph which we consider. It is necessary for this graph to have been processed by the Kruskal algorithm.
+        -node:  NodeType
+            The node which we consider ; its neighbours become its children nodes, except for its parent.
+        -liste_parents: List
+            The list in which we store the parent-children system.
+        -seen: Set
+            The set of nodes which were already seen. It allows the DFS not to run twice on the same node.
+
+    Output:
+    -------
+        -liste_parents:
+            The list which represents the parent-children system.
+    '''
     if len(seen)/input_graph.nb_nodes*100%5 < 0.001:
         print(f'Construction du système de parents : {len(seen)/input_graph.nb_nodes*100//5*5}%')
     if node not in seen:
@@ -385,6 +412,30 @@ def determine(input_graph, node, liste_parents, seen=set()):
     return liste_parents
 
 def find_path_with_kruskal(input_graph, origin, destination, power=-1):
+    '''
+    This function aims to find a path in a minimum spanning tree.
+    The input_graph must have been processed by the Kruskal function.
+
+    Parameters:
+    -----------
+        -input_graph : GraphType
+            A graph object, which is a minimum spanning tree.
+        -origin:    NodeType
+            The starting node for the path.
+        -destination :  NodeType
+            The destination node for the path
+        -power : integer(optionnal)
+            The power which can restrict the edges for the algorithm to consider.
+        
+
+    
+    Output:
+    -------
+        -power : integer
+            The minimum power necessary to travel from the two nodes.
+        -path: list
+            The path from the two parameters nodes.
+    '''
     #This function aims to find a quick path between two nodes, using the minimum spanning tree.
     list_of_parents = input_graph.parents
     ancestors = []
@@ -471,6 +522,17 @@ def graph_from_file(filename):
     return new_graph
 
 def graph_into_pdf(filename):
+    '''
+    This function aims to draw a graph from a file into a pdf, using graphviz module.
+
+    Parameters:
+    -----------
+        -filename : A compatible file to draw the graph.
+    
+    Output:
+    -------
+        -pdf : The pdf representing the graph.
+    '''
     file = open(filename, 'r')
     graph = graphviz.Digraph('Le graphe')
     dist=1
