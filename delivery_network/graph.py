@@ -1,4 +1,4 @@
-#import graphviz
+import graphviz
 import time
 import sys
 sys.setrecursionlimit(10000)
@@ -123,7 +123,7 @@ class Graph:
         path = self.get_list_of_paths_with_power(origin,destination,power=power)[0]
         return (power,path)
         
-    def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[], unique=False):
+    def get_list_of_paths_with_power(self, node, dest, seen, liste, power=-1, unique=False):
         '''
         This function searches for all of the possible paths between two nodes, given a certain power(optional).
         It relies on a DFS, which is modified to remmeber the path that has been taken.
@@ -177,7 +177,9 @@ class Graph:
             -list_of_paths[integer] : a path from the list of all possible paths.
         
         '''
-        list_of_paths = self.get_list_of_paths_with_power(origin,destination,power, unique=True)
+        liste = []
+        seen = []
+        list_of_paths = self.get_list_of_paths_with_power(origin,destination,power, seen = seen, liste = liste, unique=True)
         if list_of_paths == []:
             return None
         return list_of_paths[0]
@@ -358,7 +360,7 @@ def kruskal(input_graph):
         #We look at all edges to properly intialize our graph object.
         output_graph.add_edge(origin,destination,power_min=power)
         output_graph.max_power = max(output_graph.max_power, power)
-    output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] for node in output_graph.nodes if output_graph.graph[node]!=[]]
+    output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] if input_graph.graph[node]!=[] else () for node in input_graph.nodes]
     #All of the graph parameters are set :)
     stop = time.perf_counter()
     print(f'Graphe par Kruskal tracé en {stop-start} secondes')
@@ -399,8 +401,6 @@ def determine(input_graph, node, liste_parents, seen=set()):
         -liste_parents:
             The list which represents the parent-children system.
     '''
-    if len(seen)/input_graph.nb_nodes*100%5 < 0.001:
-        print(f'Construction du système de parents : {len(seen)/input_graph.nb_nodes*100//5*5}%')
     if node not in seen:
         #If the edge is not in the set, we add it and depth search from it.
         seen.add(node)
@@ -426,9 +426,6 @@ def find_path_with_kruskal(input_graph, origin, destination, power=-1):
             The destination node for the path
         -power : integer(optionnal)
             The power which can restrict the edges for the algorithm to consider.
-        
-
-    
     Output:
     -------
         -power : integer
@@ -438,13 +435,13 @@ def find_path_with_kruskal(input_graph, origin, destination, power=-1):
     '''
     #This function aims to find a quick path between two nodes, using the minimum spanning tree.
     list_of_parents = input_graph.parents
-    ancestors = []
+    ancestors = set()
     #We build the list of all ancestors of the start node
     current_node = origin
     while list_of_parents[current_node-1] != current_node:
-        ancestors.append(current_node)
+        ancestors.add(current_node)
         current_node = list_of_parents[current_node-1]
-    ancestors.append(current_node)
+    ancestors.add(current_node)
     #To find the path, we find the lowest common ancestor of the two nodes.
     lca = destination
     while lca not in ancestors:
@@ -515,7 +512,7 @@ def graph_from_file(filename):
             dist = int(list_line[3])
         new_graph.max_power = max(new_graph.max_power, power)
         new_graph.add_edge(start_node, end_node, power, dist)
-    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
+    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] if new_graph.graph[node]!=[] else () for node in new_graph.nodes ]
     stop = time.perf_counter()
     print(stop-start)
     file.close()
@@ -551,3 +548,19 @@ def graph_into_pdf(filename):
         graph.edge(list_line[0],list_line[1],arrowhead='none')
     file.close()
     graph.render()
+
+def route_min_power(file):
+    f = open(f'input/routes.{file}.in', 'r')
+    g = graph_from_file(f'input/network.{file}.in')
+    h = kruskal(g)
+    determine_parents(h)
+    output = open(f'output/routes.{file}.in','w')
+    f.readline()
+    for line in f:
+        list_line = line.split(' ')
+        origin = int(list_line[0])
+        destination = int(list_line[1])
+        min_power = find_path_with_kruskal(h,origin,destination)[0]
+        output.write(str(min_power))
+        output.write('\n')
+    output.close()
