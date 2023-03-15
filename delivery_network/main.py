@@ -4,7 +4,7 @@ import time
 import random
 
 data_path = "input/"
-file_name = "network.9.in"
+file_name = "network.1.in"
 
 def estimate_time():
     start_tot = time.perf_counter()
@@ -29,4 +29,6 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-estimate_time()
+g = graph_from_file(data_path + file_name)
+print(g)
+print(g.get_path_with_power(1, 2, power=5))
