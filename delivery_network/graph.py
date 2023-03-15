@@ -1,7 +1,7 @@
 import graphviz
 import time
 import sys
-sys.setrecursionlimit(10000)
+sys.setrecursionlimit(10000)#In this programm, we use recursive DFS a lot
 class Graph:
     def __init__(self, nodes=[]):
         self.nodes = nodes
@@ -11,7 +11,7 @@ class Graph:
         self.list_of_neighbours = []
         self.list_of_edges = []
         self.max_power = 0
-        self.parent = []
+        self.parent_list = []
         """
         Example graph format for two nodes(1,2) connected:
         self.nodes = [1,2]
@@ -53,7 +53,7 @@ class Graph:
         #We build a list of all edges
         self.list_of_edges.append((node1,node2,power_min))
 
-    def minimum_distance(self,origin, destination, possible_paths=[]):
+    def minimum_distance(self,origin, destination,power):
         '''
         This function returns the minimum distance to link two nodes.
         In order to do so, we examine all possible paths, retrieve the total distance for each, and choose the minimum
@@ -64,33 +64,37 @@ class Graph:
                 The starting node for the path
             -destination : NodeType(integer)
                 The destination node
-            -possible_paths : list
-                the list of all possible paths to link the two nodes together
+            -power : integer
+                The max power which our path can take.
 
         Output:
         -------
             -min_index : The index for the smallest distance to link the nodes together
         '''
+        possible_paths = self.get_list_of_paths_with_power(origin,destination,power)
         list_of_neighbours = self.list_of_neighbours
         current_distance = 0
         distance = 0
-        for index, path in enumerate(possible_paths):
-            for node in path:
-                if node == origin:
-                    previous_node = node
+        #We have listed all possible paths.
+        for index, path in enumerate(possible_paths):#We look at all paths to determine the minimum distance.
+            for index_2, node in enumerate(path):
+                if node == path[-1]:
                     continue
-                index_previous_node = list_of_neighbours[node-1].index(previous_node)
-                current_distance += self.graph[node][index_previous_node][2]
+                neighbour_index = self.list_of_neighbours[node-1].index(path[index_2+1])
+                current_distance += self.graph[node][neighbour_index][2]
                 previous_node = node
             if current_distance<distance or distance==0:
                 distance = current_distance
-                min_index = index            
-        return min_index
+                min_index = index
+        if distance == 0:
+            return 0
+        return (possible_paths[min_index], distance)
 
     def min_power(self,origin,destination):
         '''
         This function searches the minimum power to link two nodes together.
         It relies on binary search : we list all powers in our graph, and we look if the nodes can be linked with a given power.
+        In the worst case scenario, its complexity is log_2(max_power) + 1.
 
         Parameters:
         -----------
@@ -123,7 +127,7 @@ class Graph:
         path = self.get_list_of_paths_with_power(origin,destination,power=power)[0]
         return (power,path)
         
-    def get_list_of_paths_with_power(self, node, dest, seen, liste, power=-1, unique=False):
+    def get_list_of_paths_with_power(self, node, dest, power=-1, seen=[], liste=[], unique=False):
         '''
         This function searches for all of the possible paths between two nodes, given a certain power(optional).
         It relies on a DFS, which is modified to remmeber the path that has been taken.
@@ -144,14 +148,15 @@ class Graph:
     
         Output:
         -------
-            -liste : liste
+            -liste : List
                 The list containing all of the possible paths.
         '''
+        #This function is a "classic" DFS.
         if node not in seen:
             seen.append(node)
             if node == dest:
                 liste.append(seen)
-                if unique == True:
+                if unique == True:#If we only want one path among all.
                     return seen
             for index, neighbor in enumerate(self.list_of_neighbours[node-1]):
                 if self.graph[node][index][1] > power and power!=-1:
@@ -162,6 +167,8 @@ class Graph:
     def get_path_with_power(self,origin,destination,power=-1):
         '''
         This function returns a path compatible with a given power between two nodes.
+        This fuction relies on a DFS which is unique given the fact that we need a unique path.
+        Therefore, its complexity is O(|V| + |E|), where |V| is the number of nodes, and |E| is the number of edges.
 
         Parameters:
         -----------
@@ -239,54 +246,169 @@ class Graph:
         """
         return set(map(frozenset, self.connected_components()))
 
-def graph_from_file(filename):
-    """
-    Reads a text file and returns the graph as an object of the Graph class.
+    def kruskal(self):
+        '''
+        This function is an implementation of the Kruskal's algorithm, described in Algorithms, Dasgupta et al.
+        Its complexity is O(E*V), given the fact that our union-find structure relies on sets.
 
-    The file should have the following format: 
-        The first line of the file is 'n m'
-        The next m lines have 'node1 node2 power_min dist' or 'node1 node2 power_min' (if dist is missing, it will be set to 1 by default)
-        The nodes (node1, node2) should be named 1..n
-        All values are integers.
+        Parameters:
+        -----------
+        input_graph : graph object
+            The graph which will be spanned by the algorithm.
 
-    Parameters: 
-    -----------
-    filename: str
-        The name of the file
+        Output:
+        -------
+        output_graph : graph object
+            The minimum spanning tree extracted from input_graph.   
+        '''
+        #We need to build a list of all edges, sorted by power, and in order that they are not duplicated
+        #The list is partially built thanks to add_edge function, but it needs to be sorted
+        sorted_edges = self.list_of_edges
+        sorted_edges.sort(key=lambda a : a[2])
+        #The list of edges sorted by power_min is now stored in sorted_edges
+        output_graph = Graph(self.nodes)
+        dict_of_nodes = {}
+        for node in self.nodes:#We create a list of nodes in our union find structure
+            dict_of_nodes[node] = Union_Find()
+            dict_of_nodes[node].make_set()
+        X = set()
+        for edge in sorted_edges:
+            #We start by identifying our linked nodes
+            node_1 = edge[0]
+            node_2 = edge[1]
+            power_min = edge[2]
+            if dict_of_nodes[node_1].find() != dict_of_nodes[node_2].find():#If the two nodes do not share the same parent, we add the edge to the set
+                X.add((node_1,node_2,power_min))
+                dict_of_nodes[node_1].union(dict_of_nodes[node_2])#We link the nodes together in order to update nodes' parents
+        
+        start = time.perf_counter()
+        #X now contains the list of all edges of the spanned graph. We have to create it.
+        output_graph.nb_edges = self.nb_nodes - 1
+        for edge in X:
+            origin, destination, power = edge[0], edge[1], edge[2]
+            #We look at all edges to properly intialize our graph object.
+            output_graph.add_edge(origin,destination,power_min=power)
+            output_graph.max_power = max(output_graph.max_power, power)
+        output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] if self.graph[node]!=[] else () for node in self.nodes]
+        #All of the graph parameters are set :)
+        stop = time.perf_counter()
+        print(f'Graphe par Kruskal tracé en {stop-start} secondes')
+        return output_graph
+    
+    def build_parents(self):
+        '''
+        This function properly determines the parent-children system for a graph.
+        It then relies on the determine function, which is a DFS.
+        We must travel through the whole graph, and because the graph is a minimum spanning tree, E = V -1
+        The complexity of this algorithm is O(V).
 
-    Outputs: 
-    -----------
-    G: Graph
-        An object of the class Graph with the graph from file_name.
-    """
-    start = time.perf_counter()
-    file = open(filename, 'r')
-    dist=1
-    #First line is read in order to properly intialize our graph
-    line_1 = file.readline().split(' ')
-    total_nodes = int(line_1[0])
-    nb_edges = int(line_1[1].strip('\n'))
-    new_graph = Graph([node for node in range(1,total_nodes+1)])
-    new_graph.nb_edges = nb_edges
-    #new_graph.list_of_edges = [None]*nb_edges
-    #Then, all lines are read to create a new edge for each line
-    for line in file:
-        list_line = line.split(' ')
-        start_node = int(list_line[0])
-        end_node = int(list_line[1])
-        power = int(list_line[2])
-        if list_line == []:
-            continue
-        if len(list_line) == 4:
-            #In the case where a distance is included
-            dist = int(list_line[3])
-        new_graph.max_power = max(new_graph.max_power, power)
-        new_graph.add_edge(start_node, end_node, power, dist)
-    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] for node in new_graph.nodes if new_graph.graph[node]!=[]]
-    stop = time.perf_counter()
-    print(f'Graphe tracé en {stop-start} secondes')
-    file.close()
-    return new_graph
+        Parameters:
+        -----------
+            -input_graph : GraphType
+                The input graph which we process. It is necessary for this graph to have been processed by the Kruskal algorithm.
+        
+        Output:
+        -------
+            -self.parents : List
+                The list which resumes the parent-children relationship between nodes.
+        '''
+        liste_parents = list(range(1,self.nb_nodes+1))#We define node n°1 to be the highest ancestor, but it could be any node.
+        self.parent_list =  self.parents(1, liste_parents=liste_parents)#We build self.parent_list
+
+    def parents(self, node, liste_parents, seen=set()):
+        '''
+        This function determines parent nodes for all nodes in our graph.
+        This parent-children system will be later used in order to find a path between nodes quickly.
+        This function relies on a DFS, so it is recursive.
+
+        Parameters:
+        -----------
+            -input_graph : GraphType
+                The graph which we consider. It is necessary for this graph to have been processed by the Kruskal algorithm.
+            -node:  NodeType
+                The node which we consider ; its neighbours become its children nodes, except for its parent.
+            -liste_parents: List
+                The list in which we store the parent-children system.
+            -seen: Set
+                The set of nodes which were already seen. It allows the DFS not to run twice on the same node.
+
+        Output:
+        -------
+            -liste_parents:
+                The list which represents the parent-children system.
+        '''
+        if node not in seen:
+            #If the edge is not in the set, we add it and depth search from it.
+            seen.add(node)
+            list_of_neighbours = self.list_of_neighbours
+            for neighbour in list_of_neighbours[node-1]:
+                if neighbour not in seen:
+                    liste_parents[neighbour-1] =  node #The node's parent is the node from which we come.
+                    self.parents(neighbour,liste_parents,seen)
+        return liste_parents
+
+    def find_path_with_kruskal(self, origin, destination, power=-1):
+        '''
+        This function aims to find a path in a minimum spanning tree.
+        The input_graph must have been processed by the Kruskal function.
+        It relies on self.parents, that uses on a DFS.
+        The complexity of this function is therefore given by build_parents's complexity(O(V))
+
+        Parameters:
+        -----------
+            -input_graph : GraphType
+                A graph object, which is a minimum spanning tree.
+            -origin:    NodeType
+                The starting node for the path.
+            -destination :  NodeType
+                The destination node for the path
+            -power : integer(optionnal)
+                The power which can restrict the edges for the algorithm to consider.
+        Output:
+        -------
+            -power : integer
+                The minimum power necessary to travel from the two nodes.
+            -path: list
+                The path from the two parameters nodes.
+        '''
+        #This function aims to find a quick path between two nodes, using the minimum spanning tree.
+        list_of_parents = self.parent_list
+        ancestors = set()
+        #We build the list of all ancestors of the start node
+        current_node = origin
+        while list_of_parents[current_node-1] != current_node:
+            ancestors.add(current_node)
+            current_node = list_of_parents[current_node-1]
+        ancestors.add(current_node)
+        #To find the path, we find the lowest common ancestor of the two nodes.
+        lca = destination
+        while lca not in ancestors:
+            lca = list_of_parents[lca-1]
+
+        #The path is simple : starting node -> lca -> ending node
+        ascending_path  = []
+        descending_path = []
+        current_node = origin
+        while current_node != lca:
+            ascending_path.append(current_node)
+            current_node = list_of_parents[current_node-1]
+        ascending_path.append(lca)
+
+        current_node = destination
+        while current_node != lca:
+            descending_path.append(current_node)
+            current_node = list_of_parents[current_node-1]
+        #Now the path regardless of power is found.
+        #To find the power, we collect all powers in that path, and identify the minimum
+        path = ascending_path + descending_path[::-1]
+        power = 0
+        for index in range(len(path)-1):
+            origin, destination = path[index], path[index+1]
+            destination_index = self.list_of_neighbours[origin-1].index(destination)
+            current_power = self.graph[origin][destination_index][1]
+            if current_power > power:
+                power = current_power
+        return (power, path)
 
 class Union_Find():
     '''
@@ -319,157 +441,6 @@ class Union_Find():
             if root_x.rank == root_y.rank:
                 root_y.rank = root_y.rank + 1
         
-def kruskal(input_graph):
-    '''
-    This function is an implementation of the Kruskal's algorithm, described in Algorithms, Dasgupta et al.
-
-    Parameters:
-    -----------
-    input_graph : graph object
-        The graph which will be spanned by the algorithm.
-
-    Output:
-    -------
-    output_graph : graph object
-        The minimum spanning tree extracted from input_graph.   
-    '''
-    #We need to build a list of all edges, sorted by power, and in order that they are not duplicated
-    #The list is partially built thanks to add_edge function, but it needs to be sorted
-    sorted_edges = input_graph.list_of_edges
-    sorted_edges.sort(key=lambda a : a[2])
-    #The list of edges sorted by power_min is now stored in sorted_edges
-    output_graph = Graph(input_graph.nodes)
-    dict_of_nodes = {}
-    for node in input_graph.nodes:#We create a list of nodes in our union find structure
-        dict_of_nodes[node] = Union_Find()
-        dict_of_nodes[node].make_set()
-    X = set()
-    for edge in sorted_edges:
-        #We start by identifying our linked nodes
-        node_1 = edge[0]
-        node_2 = edge[1]
-        power_min = edge[2]
-        if dict_of_nodes[node_1].find() != dict_of_nodes[node_2].find():#If the two nodes do not share the same parent, we add the edge to the set
-            X.add((node_1,node_2,power_min))
-            dict_of_nodes[node_1].union(dict_of_nodes[node_2])#We link the nodes together in order to update nodes' parents
-    start = time.perf_counter()
-    #X now contains the list of all edges of the spanned graph. We have to create it.
-    output_graph.nb_edges = input_graph.nb_nodes - 1
-    for edge in X:
-        origin, destination, power = edge[0], edge[1], edge[2]
-        #We look at all edges to properly intialize our graph object.
-        output_graph.add_edge(origin,destination,power_min=power)
-        output_graph.max_power = max(output_graph.max_power, power)
-    output_graph.list_of_neighbours = [list(zip(*output_graph.graph[node]))[0] if input_graph.graph[node]!=[] else () for node in input_graph.nodes]
-    #All of the graph parameters are set :)
-    stop = time.perf_counter()
-    print(f'Graphe par Kruskal tracé en {stop-start} secondes')
-    return output_graph
-
-def determine_parents(input_graph):
-    '''
-    This function properly determines the parent-children system for a graph.
-    It then relies on the determine function, which is a DFS.
-
-    Parameters:
-    -----------
-        -input_graph : GraphType
-            The input graph which we process. It is necessary for this graph to have been processed by the Kruskal algorithm.
-    '''
-    liste_parents = list(range(1,input_graph.nb_nodes+1))
-    input_graph.parents =  determine(input_graph, 1, liste_parents=liste_parents)
-
-def determine(input_graph, node, liste_parents, seen=set()):
-    '''
-    This function determines parent nodes for all nodes in our graph.
-    This parent-children system will be later used in order to find a path between nodes quickly.
-    This function relies on a DFS, so it is recursive.
-
-    Parameters:
-    -----------
-        -input_graph : GraphType
-            The graph which we consider. It is necessary for this graph to have been processed by the Kruskal algorithm.
-        -node:  NodeType
-            The node which we consider ; its neighbours become its children nodes, except for its parent.
-        -liste_parents: List
-            The list in which we store the parent-children system.
-        -seen: Set
-            The set of nodes which were already seen. It allows the DFS not to run twice on the same node.
-
-    Output:
-    -------
-        -liste_parents:
-            The list which represents the parent-children system.
-    '''
-    if node not in seen:
-        #If the edge is not in the set, we add it and depth search from it.
-        seen.add(node)
-        list_of_neighbours = input_graph.list_of_neighbours
-        for neighbour in list_of_neighbours[node-1]:
-            if neighbour not in seen:
-                liste_parents[neighbour-1] =  node
-                determine(input_graph,neighbour,liste_parents,seen)
-    return liste_parents
-
-def find_path_with_kruskal(input_graph, origin, destination, power=-1):
-    '''
-    This function aims to find a path in a minimum spanning tree.
-    The input_graph must have been processed by the Kruskal function.
-
-    Parameters:
-    -----------
-        -input_graph : GraphType
-            A graph object, which is a minimum spanning tree.
-        -origin:    NodeType
-            The starting node for the path.
-        -destination :  NodeType
-            The destination node for the path
-        -power : integer(optionnal)
-            The power which can restrict the edges for the algorithm to consider.
-    Output:
-    -------
-        -power : integer
-            The minimum power necessary to travel from the two nodes.
-        -path: list
-            The path from the two parameters nodes.
-    '''
-    #This function aims to find a quick path between two nodes, using the minimum spanning tree.
-    list_of_parents = input_graph.parents
-    ancestors = set()
-    #We build the list of all ancestors of the start node
-    current_node = origin
-    while list_of_parents[current_node-1] != current_node:
-        ancestors.add(current_node)
-        current_node = list_of_parents[current_node-1]
-    ancestors.add(current_node)
-    #To find the path, we find the lowest common ancestor of the two nodes.
-    lca = destination
-    while lca not in ancestors:
-        lca = list_of_parents[lca-1]
-
-    #The path is simple : starting node -> lca -> ending node
-    ascending_path  = []
-    descending_path = []
-    current_node = origin
-    while current_node != lca:
-        ascending_path.append(current_node)
-        current_node = list_of_parents[current_node-1]
-    ascending_path.append(lca)
-
-    current_node = destination
-    while current_node != lca:
-        descending_path.append(current_node)
-        current_node = list_of_parents[current_node-1]
-    #Now the path regardless of power is found.
-    #To find the power, we collect all powers in that path, and identify the minimum
-    path = ascending_path + descending_path[::-1]
-    power = 0
-    for index in range(len(path)-1):
-        origin, destination = path[index], path[index+1]
-        destination_index = input_graph.list_of_neighbours[origin-1].index(destination)
-        power = max(power, input_graph.graph[origin][destination_index][1])
-    return (power, path)
-
 def graph_from_file(filename):
     """
     Reads a text file and returns the graph as an object of the Graph class.
@@ -490,7 +461,6 @@ def graph_from_file(filename):
     G: Graph
         An object of the class Graph with the graph from file_name.
     """
-    start = time.perf_counter()
     file = open(filename, 'r')
     dist=1
     #First line is read in order to properly intialize our graph
@@ -512,9 +482,7 @@ def graph_from_file(filename):
             dist = int(list_line[3])
         new_graph.max_power = max(new_graph.max_power, power)
         new_graph.add_edge(start_node, end_node, power, dist)
-    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] if new_graph.graph[node]!=[] else () for node in new_graph.nodes ]
-    stop = time.perf_counter()
-    print(stop-start)
+    new_graph.list_of_neighbours = [list(zip(*new_graph.graph[node]))[0] if new_graph.graph[node]!=[] else () for node in new_graph.nodes]
     file.close()
     return new_graph
 
@@ -550,17 +518,29 @@ def graph_into_pdf(filename):
     graph.render()
 
 def route_min_power(file):
+    '''
+    This function builds a graph, and determines the min_power for all routes proposed.
+    Parameters:
+    -----------
+        -file : integer
+            The integer representing the graph(eg : network.1 // routes.1)
+    
+    Output:
+    -------
+        -output : .in file
+            The file containing all of the minimum power for all routes proposed.
+    '''
     f = open(f'input/routes.{file}.in', 'r')
     g = graph_from_file(f'input/network.{file}.in')
-    h = kruskal(g)
-    determine_parents(h)
+    h = g.kruskal()
+    h.build_parents()
     output = open(f'output/routes.{file}.in','w')
     f.readline()
-    for line in f:
+    for line in f:#We read all lines to find the path
         list_line = line.split(' ')
         origin = int(list_line[0])
         destination = int(list_line[1])
-        min_power = find_path_with_kruskal(h,origin,destination)[0]
-        output.write(str(min_power))
+        min_power = h.find_path_with_kruskal(origin,destination)[0]#We determine min_power for this path
+        output.write(str(min_power))#We write in in our output file.
         output.write('\n')
     output.close()
