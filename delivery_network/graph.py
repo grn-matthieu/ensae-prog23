@@ -372,8 +372,8 @@ def determine_parents(input_graph):
     input_graph.parents =  determine(input_graph, 1, liste_parents=liste_parents)
 
 def determine(input_graph, node, liste_parents, seen=set()):
-    if len(seen)/input_graph.nb_nodes*100%5 < 0.001:
-        print(f'Construction du système de parents : {len(seen)/input_graph.nb_nodes*100//5*5}%')
+    #if len(seen)/input_graph.nb_nodes*100%5 < 0.001:
+        #print(f'Construction du système de parents : {len(seen)/input_graph.nb_nodes*100//5*5}%')
     if node not in seen:
         #If the edge is not in the set, we add it and depth search from it.
         seen.add(node)
@@ -415,11 +415,11 @@ def find_path_with_kruskal(input_graph, origin, destination, power=-1):
     #Now the path regardless of power is found.
     #To find the power, we collect all powers in that path, and identify the minimum
     path = ascending_path + descending_path[::-1]
-    power = input_graph.max_power
+    power = 0
     for index in range(len(path)-1):
         origin, destination = path[index], path[index+1]
         destination_index = input_graph.list_of_neighbours[origin-1].index(destination)
-        power = min(power, input_graph.graph[origin][destination_index][1])
+        power = max(power, input_graph.graph[origin][destination_index][1])
     return (power, path)
 
 def graph_from_file(filename):

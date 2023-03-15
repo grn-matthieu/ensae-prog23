@@ -4,7 +4,7 @@ import time
 import random
 
 data_path = "input/"
-file_name = "network.1.in"
+file_name = "network.9.in"
 
 def estimate_time():
     start_tot = time.perf_counter()
@@ -20,7 +20,7 @@ def estimate_time():
 
     for origin,destination in list_of_paths:
         current_time_start = time.perf_counter()
-        print(find_path_with_kruskal(graph_2,origin,destination))
+        find_path_with_kruskal(graph_2,origin,destination)
         current_time_stop = time.perf_counter()
         list_of_times.append(current_time_stop-current_time_start)
     print(f'Moyenne de temps de traitement du trajet: {(1/N)*sum(list_of_times)}')
