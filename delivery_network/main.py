@@ -1,7 +1,8 @@
-from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power
+from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, build_m_matrix
 import os
 import time
 import random
+import numpy as np
 
 data_path = "input/"
 file_name = "network.1.in"
@@ -36,4 +37,4 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-route_min_power(4)
+print(build_m_matrix(1))

@@ -442,7 +442,7 @@ class Union_Find():
             if root_x.rank == root_y.rank:
                 root_y.rank = root_y.rank + 1
         
-def graph_from_file(filenamcde):
+def graph_from_file(filename):
     """
     Reads a text file and returns the graph as an object of the Graph class.
 
@@ -536,7 +536,7 @@ def route_min_power(file):
     h = g.kruskal()
     h.build_parents()
     output = open(f'output/routes.{file}.in','w')
-    f.readline()
+    output.write(f.readline())
     for line in f:#We read all lines to find the path
         list_line = line.split(' ')
         origin = int(list_line[0])
@@ -546,3 +546,54 @@ def route_min_power(file):
         output.write(str(min_power) + ' ' + str(utility))#We write in in our output file.
         output.write('\n')
     output.close()
+
+def extract_values(file):
+    f = open(f'output/routes.{file}.in', 'r')
+    nb_trajets = int(f.readline())
+    utility = np.zeros(nb_trajets)
+    min_power = np.zeros(nb_trajets)
+    for index, line in enumerate(f):
+        current_utility = int(line.split(' ')[1])
+        current_power = int(line.split(' ')[0])
+        utility[index] = current_utility
+        min_power[index] = current_power
+    #Ok for our utility array
+    f.close()
+    f = open(f'input/trucks.{file}.in', 'r')
+    nb_trucks = int(f.readline())
+    trucks_costs = np.zeros(nb_trucks)
+    trucks_power = np.zeros(nb_trucks)
+    for index, line in enumerate(f):
+        list_line = line.split(' ')
+        power = int(list_line[0])
+        cost = int(list_line[1])
+        trucks_costs[index] = cost
+        trucks_power[index] = power
+    f.close()
+    #Ok for arrays truck_costs, truck_power
+    minimal_cost = np.zeros(nb_trajets)
+    for i in range(0,nb_trajets):#We check on all journeys 
+        min_cost = 0
+        for j in range(0, nb_trucks):#We check on all trucks
+            truck_cost = trucks_costs[j]
+            truck_power = trucks_power[j]
+            if (truck_power >= min_power[i] and truck_cost < min_cost) or (min_cost == 0 and truck_power >= min_power[i]):#Journey feasable + better cost
+                power = min_power[i] 
+                min_cost = truck_cost
+        minimal_cost[i] = min_cost
+    #Ok for optimal cost array
+    return nb_trajets, utility, minimal_cost
+
+def build_m_matrix(file):
+    nb_journeys, utility, minimal_cost = extract_values(file)
+    W = len(minimal_cost)
+    maximum_budget = 25 * 10e9
+    m_matrix = np.zeros((nb_journeys, W))
+    for i in range(0,W):
+        m_matrix[0,i] = 0
+    for i in range(0, nb_journeys):
+        for j in range(0, W):
+            
+    return m_matrix
+
+
