@@ -1,6 +1,7 @@
 import graphviz
 import time
 import sys
+import numpy as np
 sys.setrecursionlimit(10000)#In this programm, we use recursive DFS a lot
 class Graph:
     def __init__(self, nodes=[]):
@@ -441,7 +442,7 @@ class Union_Find():
             if root_x.rank == root_y.rank:
                 root_y.rank = root_y.rank + 1
         
-def graph_from_file(filename):
+def graph_from_file(filenamcde):
     """
     Reads a text file and returns the graph as an object of the Graph class.
 
@@ -540,7 +541,8 @@ def route_min_power(file):
         list_line = line.split(' ')
         origin = int(list_line[0])
         destination = int(list_line[1])
+        utility = int(list_line[2])
         min_power = h.find_path_with_kruskal(origin,destination)[0]#We determine min_power for this path
-        output.write(str(min_power))#We write in in our output file.
+        output.write(str(min_power) + ' ' + str(utility))#We write in in our output file.
         output.write('\n')
     output.close()

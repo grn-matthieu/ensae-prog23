@@ -36,4 +36,4 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-estimate_time()
+route_min_power(4)
