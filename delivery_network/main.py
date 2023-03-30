@@ -1,4 +1,4 @@
-from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, build_m_matrix
+from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, extract_values, first_approach
 import os
 import time
 import random
@@ -37,4 +37,5 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-print(build_m_matrix(1))
+nb_trajets, utility, minimal_cost = extract_values(1)
+first_approach(nb_trajets, utility, minimal_cost)

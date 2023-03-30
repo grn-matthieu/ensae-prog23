@@ -535,7 +535,7 @@ def route_min_power(file):
     g = graph_from_file(f'input/network.{file}.in')
     h = g.kruskal()
     h.build_parents()
-    output = open(f'output/routes.{file}.in','w')
+    output = open(f'output/routes.{file}.out','w')
     output.write(f.readline())
     for line in f:#We read all lines to find the path
         list_line = line.split(' ')
@@ -548,7 +548,7 @@ def route_min_power(file):
     output.close()
 
 def extract_values(file):
-    f = open(f'output/routes.{file}.in', 'r')
+    f = open(f'output/routes.{file}.out', 'r')
     nb_trajets = int(f.readline())
     utility = np.zeros(nb_trajets)
     min_power = np.zeros(nb_trajets)
@@ -557,43 +557,60 @@ def extract_values(file):
         current_power = int(line.split(' ')[0])
         utility[index] = current_utility
         min_power[index] = current_power
-    #Ok for our utility array
+    #The utility and min_power array of our routes are now properly initialized
     f.close()
     f = open(f'input/trucks.{file}.in', 'r')
     nb_trucks = int(f.readline())
     trucks_costs = np.zeros(nb_trucks)
     trucks_power = np.zeros(nb_trucks)
+    trucks = np.zeros((nb_trucks, 3))
     for index, line in enumerate(f):
         list_line = line.split(' ')
         power = int(list_line[0])
         cost = int(list_line[1])
-        trucks_costs[index] = cost
-        trucks_power[index] = power
+        trucks[index][0] = index
+        trucks[index][1] = cost
+        trucks[index][2] = power
     f.close()
-    #Ok for arrays truck_costs, truck_power
-    minimal_cost = np.zeros(nb_trajets)
+    #For each truck, we now have stored their costs in trucks-costs, and their powers in trucks_power
+    minimal_cost = np.zeros((nb_trajets,2))
     for i in range(0,nb_trajets):#We check on all journeys 
         min_cost = 0
+        min_truck = 0
         for j in range(0, nb_trucks):#We check on all trucks
-            truck_cost = trucks_costs[j]
-            truck_power = trucks_power[j]
+            truck_cost = trucks[j][1]
+            truck_power = trucks[j][2]
             if (truck_power >= min_power[i] and truck_cost < min_cost) or (min_cost == 0 and truck_power >= min_power[i]):#Journey feasable + better cost
-                power = min_power[i] 
+                power = min_power[i]
                 min_cost = truck_cost
-        minimal_cost[i] = min_cost
+                min_truck =j
+        minimal_cost[i][0] = min_cost
+        minimal_cost[i][1] = min_truck
     #Ok for optimal cost array
     return nb_trajets, utility, minimal_cost
 
-def build_m_matrix(file):
-    nb_journeys, utility, minimal_cost = extract_values(file)
-    W = len(minimal_cost)
-    maximum_budget = 25 * 10e9
-    m_matrix = np.zeros((nb_journeys, W))
-    for i in range(0,W):
-        m_matrix[0,i] = 0
-    for i in range(0, nb_journeys):
-        for j in range(0, W):
-            
-    return m_matrix
-
-
+def first_approach(nb_trajets, utility, minimal_cost):
+    utility_cost = np.zeros((nb_trajets, 2))
+    for i in range(nb_trajets):
+        utility_cost[i][0] = 0
+        if utility[i] != 0:
+            utility_cost[i][0] = utility[i]/minimal_cost[i][0]
+        utility_cost[i][1] = i
+    #We now have an array that stores the utility/cost value for each route
+    sorted_utility = utility_cost[utility_cost[:,0].argsort()]
+    
+    budget = 1500000
+    output = np.zeros((nb_trajets, 4))
+    for i in range(nb_trajets):
+        rank = 139-i
+        journey = int(sorted_utility[rank][1])
+        print(f'AHHHH {minimal_cost[journey][0]}')
+        if minimal_cost[journey][0] <= budget:#We have enough money to perform the route
+            output[journey][0] = 1#1 if done, 0 if not
+            output[journey][1] = minimal_cost[journey][0]#The cost of this route
+            output[journey][2] = minimal_cost[journey][1]#The truck performing it
+            output[journey][3] = utility[journey]#The utility of the route
+        budget = budget - minimal_cost[journey][0]
+    print(output)
+    print(f'Utilité totale : {sum(output[i][3] for i in range(nb_trajets))}')
+        
