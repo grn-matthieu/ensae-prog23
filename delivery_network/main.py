@@ -1,4 +1,4 @@
-from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, extract_values, first_approach
+from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, extract_values, greedy_approach, dynamic_programming
 import os
 import time
 import random
@@ -37,5 +37,7 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
+budget = 250000
 nb_trajets, utility, minimal_cost = extract_values(1)
-first_approach(nb_trajets, utility, minimal_cost)
+dynamic_programming(nb_trajets, utility, minimal_cost, budget)
+greedy_approach(nb_trajets, utility, minimal_cost, budget)

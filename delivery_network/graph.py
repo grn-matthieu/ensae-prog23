@@ -561,8 +561,6 @@ def extract_values(file):
     f.close()
     f = open(f'input/trucks.{file}.in', 'r')
     nb_trucks = int(f.readline())
-    trucks_costs = np.zeros(nb_trucks)
-    trucks_power = np.zeros(nb_trucks)
     trucks = np.zeros((nb_trucks, 3))
     for index, line in enumerate(f):
         list_line = line.split(' ')
@@ -578,18 +576,19 @@ def extract_values(file):
         min_cost = 0
         min_truck = 0
         for j in range(0, nb_trucks):#We check on all trucks
+            #WARNING : this approach relies on the fact that the trucks.in file is sorted by cost
             truck_cost = trucks[j][1]
             truck_power = trucks[j][2]
-            if (truck_power >= min_power[i] and truck_cost < min_cost) or (min_cost == 0 and truck_power >= min_power[i]):#Journey feasable + better cost
-                power = min_power[i]
+            if truck_power >= min_power[i]:
+                min_truck = j
                 min_cost = truck_cost
-                min_truck =j
+                break
         minimal_cost[i][0] = min_cost
         minimal_cost[i][1] = min_truck
     #Ok for optimal cost array
     return nb_trajets, utility, minimal_cost
 
-def first_approach(nb_trajets, utility, minimal_cost):
+def greedy_approach(nb_trajets, utility, minimal_cost, budget):
     utility_cost = np.zeros((nb_trajets, 2))
     for i in range(nb_trajets):
         utility_cost[i][0] = 0
@@ -598,19 +597,37 @@ def first_approach(nb_trajets, utility, minimal_cost):
         utility_cost[i][1] = i
     #We now have an array that stores the utility/cost value for each route
     sorted_utility = utility_cost[utility_cost[:,0].argsort()]
-    
-    budget = 1500000
+
     output = np.zeros((nb_trajets, 4))
     for i in range(nb_trajets):
         rank = 139-i
         journey = int(sorted_utility[rank][1])
-        print(f'AHHHH {minimal_cost[journey][0]}')
         if minimal_cost[journey][0] <= budget:#We have enough money to perform the route
             output[journey][0] = 1#1 if done, 0 if not
             output[journey][1] = minimal_cost[journey][0]#The cost of this route
             output[journey][2] = minimal_cost[journey][1]#The truck performing it
             output[journey][3] = utility[journey]#The utility of the route
         budget = budget - minimal_cost[journey][0]
-    print(output)
-    print(f'Utilité totale : {sum(output[i][3] for i in range(nb_trajets))}')
-        
+    print(f'Utilité totale(méthode greedy) : {sum(output[i][3] for i in range(nb_trajets))}')
+
+def dynamic_programming(nb_trajets, utility, minimal_cost, budget):
+    W = budget
+    weights = minimal_cost[:,0]
+    value = utility
+    new_W = int(W/50000)
+    #Now we have two arrays : weights and values.
+    M_matrix = np.empty([nb_trajets+1, new_W+1])
+    for w in range(new_W+1):
+        M_matrix[0, w] = 0
+    for i in range(nb_trajets+1):
+        M_matrix[i, 0] = 0
+    #Now first column and first row are full of zeros
+    for i in range(1, nb_trajets+1):
+        for w in range(1, new_W+1):
+            if weights[i-1] <= w*50000:#WARNING : this relies on the price difference between trucks
+                M_matrix[i, w] = max(M_matrix[i-1, w-int(weights[i-1]//50000)] + int(value[i-1]), M_matrix[i-1, w])
+            else:
+                M_matrix[i,w] = M_matrix[i-1,w]
+    print(f'Utilité totale(méthode knapsack) : {M_matrix[nb_trajets, new_W]}')
+    
+
