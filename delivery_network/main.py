@@ -5,7 +5,7 @@ import random
 import numpy as np
 
 data_path = "input/"
-file_name = "network.1.in"
+file_name = "network.2.in"
 
 def estimate_time():
     '''
@@ -37,7 +37,10 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-budget = 250000
-nb_trajets, utility, minimal_cost = extract_values(1)
-dynamic_programming(nb_trajets, utility, minimal_cost, budget)
-greedy_approach(nb_trajets, utility, minimal_cost, budget)
+budget = 25e9
+
+nb_trajets, utility, minimal_cost = extract_values(2)
+time_2 = time.perf_counter()
+dynamic_programming(nb_trajets, utility, minimal_cost, budget, 1000)
+time_1 = time.perf_counter()
+print(f"Temps d'exécution : {time_2-time_1}")

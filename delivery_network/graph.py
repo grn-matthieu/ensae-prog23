@@ -610,11 +610,11 @@ def greedy_approach(nb_trajets, utility, minimal_cost, budget):
         budget = budget - minimal_cost[journey][0]
     print(f'Utilité totale(méthode greedy) : {sum(output[i][3] for i in range(nb_trajets))}')
 
-def dynamic_programming(nb_trajets, utility, minimal_cost, budget):
+def dynamic_programming(nb_trajets, utility, minimal_cost, budget, gap):
     W = budget
     weights = minimal_cost[:,0]
     value = utility
-    new_W = int(W/50000)
+    new_W = int(W/gap)
     #Now we have two arrays : weights and values.
     M_matrix = np.empty([nb_trajets+1, new_W+1])
     for w in range(new_W+1):
@@ -624,10 +624,10 @@ def dynamic_programming(nb_trajets, utility, minimal_cost, budget):
     #Now first column and first row are full of zeros
     for i in range(1, nb_trajets+1):
         for w in range(1, new_W+1):
-            if weights[i-1] <= w*50000:#WARNING : this relies on the price difference between trucks
-                M_matrix[i, w] = max(M_matrix[i-1, w-int(weights[i-1]//50000)] + int(value[i-1]), M_matrix[i-1, w])
+            if weights[i-1] <= w*gap:#WARNING : this relies on the price difference between trucks, indicated in gap parameter
+                M_matrix[i, w] = max(M_matrix[i-1, w-int(weights[i-1]//gap)] + int(value[i-1]), M_matrix[i-1, w])
             else:
                 M_matrix[i,w] = M_matrix[i-1,w]
-    print(f'Utilité totale(méthode knapsack) : {M_matrix[nb_trajets, new_W]}')
+    print(f'Utilité totale(méthode dynamique) : {M_matrix[nb_trajets, new_W]}')
     
 
