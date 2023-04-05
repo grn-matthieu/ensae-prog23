@@ -553,12 +553,11 @@ def extract_values(file):
     utility = np.zeros(nb_trajets)
     min_power = np.zeros(nb_trajets)
     for index, line in enumerate(f):
-        current_utility = int(line.split(' ')[1])
-        current_power = int(line.split(' ')[0])
-        utility[index] = current_utility
-        min_power[index] = current_power
+        min_power[index] = int(line.split(' ')[0])
+        utility[index] = int(line.split(' ')[1])
     #The utility and min_power array of our routes are now properly initialized
     f.close()
+    #Ok for our power and utility arrays.
     f = open(f'input/trucks.{file}.in', 'r')
     nb_trucks = int(f.readline())
     trucks = np.zeros((nb_trucks, 3))
@@ -570,18 +569,17 @@ def extract_values(file):
         trucks[index][1] = cost
         trucks[index][2] = power
     f.close()
-    #For each truck, we now have stored their costs in trucks-costs, and their powers in trucks_power
+    trucks = trucks[trucks[:,1].argsort()]#We sort our trucks by cost
+    #For each truck, we now have stored their costs and their powers in trucks array.
     minimal_cost = np.zeros((nb_trajets,2))
+    #trucks = trucks[trucks[:,0].argsort()]
     for i in range(0,nb_trajets):#We check on all journeys 
         min_cost = 0
         min_truck = 0
         for j in range(0, nb_trucks):#We check on all trucks
-            #WARNING : this approach relies on the fact that the trucks.in file is sorted by cost
-            truck_cost = trucks[j][1]
-            truck_power = trucks[j][2]
-            if truck_power >= min_power[i]:
+            if trucks[j][2] >= min_power[i]:
                 min_truck = j
-                min_cost = truck_cost
+                min_cost = trucks[j][1]
                 break
         minimal_cost[i][0] = min_cost
         minimal_cost[i][1] = min_truck

@@ -39,8 +39,4 @@ def estimate_time():
 
 budget = 25e9
 
-nb_trajets, utility, minimal_cost = extract_values(2)
-time_2 = time.perf_counter()
-dynamic_programming(nb_trajets, utility, minimal_cost, budget, 1000)
-time_1 = time.perf_counter()
-print(f"Temps d'exécution : {time_2-time_1}")
+nb_trajets, utility, minimal_cost = extract_values(1)
