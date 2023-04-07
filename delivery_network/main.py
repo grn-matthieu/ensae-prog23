@@ -1,4 +1,4 @@
-from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, extract_values, greedy_approach, dynamic_programming
+from graph import Graph, Union_Find, graph_from_file, graph_into_pdf, route_min_power, extract_values, greedy_approach, dynamic_programming, brute_force_approach
 import os
 import time
 import random
@@ -37,6 +37,13 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-budget = 25e9
-
-nb_trajets, utility, minimal_cost = extract_values(1)
+route_min_power(6)
+'''
+budget = 100000
+time_1 = time.perf_counter()
+nb_trajets, utility, minimal_cost, trucks = extract_values(1)
+print(brute_force_approach(1, minimal_cost, budget))
+time_2 = time.perf_counter()
+print(time_2-time_1)
+#nb_trajets, utility, minimal_cost = extract_values(1)
+'''

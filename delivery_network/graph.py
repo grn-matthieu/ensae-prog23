@@ -2,6 +2,7 @@ import graphviz
 import time
 import sys
 import numpy as np
+import itertools
 sys.setrecursionlimit(10000)#In this programm, we use recursive DFS a lot
 class Graph:
     def __init__(self, nodes=[]):
@@ -548,6 +549,25 @@ def route_min_power(file):
     output.close()
 
 def extract_values(file):
+    '''
+    This function reads all files relative to a given integer, and stores all the values in multiple arrays.
+
+    Parameters:
+    -----------
+        -file : integer
+            The integer relative to one set of network, route and trucks 
+    
+    Output:
+    -------
+        -nb_trajets : integer
+            The number of possible routes
+        -utility : array
+            The utility for all routes
+        -minimal_cost : array
+            The minimal cost to afford one route
+        -trucks : array
+            The array containing all variables relative to the catalog of trucks
+    '''
     f = open(f'output/routes.{file}.out', 'r')
     nb_trajets = int(f.readline())
     utility = np.zeros(nb_trajets)
@@ -563,52 +583,86 @@ def extract_values(file):
     trucks = np.zeros((nb_trucks, 3))
     for index, line in enumerate(f):
         list_line = line.split(' ')
-        power = int(list_line[0])
-        cost = int(list_line[1])
         trucks[index][0] = index
-        trucks[index][1] = cost
-        trucks[index][2] = power
+        trucks[index][1] = int(list_line[1])
+        trucks[index][2] = int(list_line[0])
     f.close()
     trucks = trucks[trucks[:,1].argsort()]#We sort our trucks by cost
     #For each truck, we now have stored their costs and their powers in trucks array.
     minimal_cost = np.zeros((nb_trajets,2))
-    #trucks = trucks[trucks[:,0].argsort()]
     for i in range(0,nb_trajets):#We check on all journeys 
         min_cost = 0
         min_truck = 0
         for j in range(0, nb_trucks):#We check on all trucks
             if trucks[j][2] >= min_power[i]:
-                min_truck = j
+                min_truck = trucks[j][0]
                 min_cost = trucks[j][1]
                 break
-        minimal_cost[i][0] = min_cost
-        minimal_cost[i][1] = min_truck
+        minimal_cost[i][0] = min_truck
+        minimal_cost[i][1] = min_cost
     #Ok for optimal cost array
-    return nb_trajets, utility, minimal_cost
+    return nb_trajets, utility, minimal_cost, trucks
 
 def greedy_approach(nb_trajets, utility, minimal_cost, budget):
+    '''
+    This solution to our problem searches for a local maximum of utility.
+    It selects routes in descending order of utility/cost, until no route can be added.
+
+    Parameters:
+    -----------
+        -file : integer
+            The integer for one set of trucks+routes
+    
+            
+    Output:
+    -------
+        - sum(output[i][3] for i in range(nb_trajets)) : integer
+            The maximum utility in our solution.
+    
+    '''
     utility_cost = np.zeros((nb_trajets, 2))
     for i in range(nb_trajets):
-        utility_cost[i][0] = 0
-        if utility[i] != 0:
-            utility_cost[i][0] = utility[i]/minimal_cost[i][0]
+        if minimal_cost[i][1] != 0:
+            utility_cost[i][0] = utility[i]/minimal_cost[i][1]
         utility_cost[i][1] = i
     #We now have an array that stores the utility/cost value for each route
     sorted_utility = utility_cost[utility_cost[:,0].argsort()]
-
     output = np.zeros((nb_trajets, 4))
     for i in range(nb_trajets):
-        rank = 139-i
-        journey = int(sorted_utility[rank][1])
-        if minimal_cost[journey][0] <= budget:#We have enough money to perform the route
+        journey = int(sorted_utility[nb_trajets-1-i][1])
+        if minimal_cost[journey][1] <= budget:#We have enough money to perform the route
             output[journey][0] = 1#1 if done, 0 if not
-            output[journey][1] = minimal_cost[journey][0]#The cost of this route
-            output[journey][2] = minimal_cost[journey][1]#The truck performing it
+            output[journey][1] = minimal_cost[journey][1]#The cost of this route
+            output[journey][2] = minimal_cost[journey][0]#The truck performing it
             output[journey][3] = utility[journey]#The utility of the route
-        budget = budget - minimal_cost[journey][0]
+        budget = budget - minimal_cost[journey][1]
     print(f'Utilité totale(méthode greedy) : {sum(output[i][3] for i in range(nb_trajets))}')
+    return sum(output[i][3] for i in range(nb_trajets))
 
 def dynamic_programming(nb_trajets, utility, minimal_cost, budget, gap):
+    '''
+    This solution to our problem searches for a global maximum of utility, using dynamic programming.
+
+    Parameters:
+    -----------
+        -nb_trajets : integer
+            The total number of routes
+        -utility : array
+            The utility array for all routes
+        -minimal_cost : array
+            The minimum cost to afford any route
+        -budget : integer
+            The total budget
+        -gap : integer
+            The gap between each column of our matrix
+    
+            
+    Output:
+    -------
+        - M_matrix[nb_trajets, new_W] : integer
+            Our global solution.
+    
+    '''
     W = budget
     weights = minimal_cost[:,0]
     value = utility
@@ -628,4 +682,42 @@ def dynamic_programming(nb_trajets, utility, minimal_cost, budget, gap):
                 M_matrix[i,w] = M_matrix[i-1,w]
     print(f'Utilité totale(méthode dynamique) : {M_matrix[nb_trajets, new_W]}')
     
+# Contrainte budgétaire à ne pas dépasser
+
+def liste_permutations_trajets(nb_trajets) : 
+    permutations_index = itertools.permutations(range(nb_trajets))
+    permutations_trajets = []
+    for p in permutations_index :
+        permutations_trajets.append(p)
+    return permutations_trajets #We now have a list of all permutations between our routes.
+
+def brute_force_approach (file, minimal_cost, budget) :
+    f = open(f'output/routes.{file}.out', 'r')
+    nb_trajets = int(f.readline())
+    utility = np.zeros(nb_trajets)
+    min_power = np.zeros(nb_trajets)
+    for index, line in enumerate(f):
+        min_power[index] = int(line.split(' ')[0])
+        utility[index] = int(line.split(' ')[1])
+    #The utility and min_power array of our routes are now properly initialized
+    f.close()
+    permutations_trajets = liste_permutations_trajets(nb_trajets)
+    nb_lines = len(permutations_trajets)
+    utility_table = np.empty((nb_lines, 2))
+    index = 0
+    for p in permutations_trajets : # We test all permutations of routes
+        U_p = 0
+        current_budget = budget
+        while current_budget > 0 :
+            for i in p:
+                if current_budget >= minimal_cost[i][1]:
+                    current_budget = current_budget - minimal_cost[i][1]
+                    U_p += utility[i]
+        utility_table[index][0]= index
+        utility_table[index][1] = U_p
+        index +=1
+    utility_table = utility_table[utility_table[:,1].argsort()]
+    max_utility = utility_table[-1][1]
+    return max_utility
+
 
