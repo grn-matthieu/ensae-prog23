@@ -37,13 +37,4 @@ def estimate_time():
     stop_tot = time.perf_counter()
     print(f'Temps total : {stop_tot+tps-start_tot}')
 
-route_min_power(6)
-'''
-budget = 100000
-time_1 = time.perf_counter()
-nb_trajets, utility, minimal_cost, trucks = extract_values(1)
-print(brute_force_approach(1, minimal_cost, budget))
-time_2 = time.perf_counter()
-print(time_2-time_1)
-#nb_trajets, utility, minimal_cost = extract_values(1)
-'''
+route_min_power(1)

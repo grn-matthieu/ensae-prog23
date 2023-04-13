@@ -1,4 +1,3 @@
-import graphviz
 import time
 import sys
 import numpy as np
@@ -532,11 +531,11 @@ def route_min_power(file):
         -output : .in file
             The file containing all of the minimum power for all routes proposed.
     '''
-    f = open(f'input/routes.{file}.in', 'r')
+    f = open(f'input/routes.a.in', 'r')
     g = graph_from_file(f'input/network.{file}.in')
     h = g.kruskal()
     h.build_parents()
-    output = open(f'output/routes.{file}.out','w')
+    output = open(f'output/routes.a.out','w')
     output.write(f.readline())
     for line in f:#We read all lines to find the path
         list_line = line.split(' ')
@@ -568,7 +567,7 @@ def extract_values(file):
         -trucks : array
             The array containing all variables relative to the catalog of trucks
     '''
-    f = open(f'output/routes.{file}.out', 'r')
+    f = open(f'output/routes.{a}.in', 'r')
     nb_trajets = int(f.readline())
     utility = np.zeros(nb_trajets)
     min_power = np.zeros(nb_trajets)
@@ -682,8 +681,6 @@ def dynamic_programming(nb_trajets, utility, minimal_cost, budget, gap):
                 M_matrix[i,w] = M_matrix[i-1,w]
     print(f'Utilité totale(méthode dynamique) : {M_matrix[nb_trajets, new_W]}')
     
-# Contrainte budgétaire à ne pas dépasser
-
 def liste_permutations_trajets(nb_trajets) : 
     permutations_index = itertools.permutations(range(nb_trajets))
     permutations_trajets = []
